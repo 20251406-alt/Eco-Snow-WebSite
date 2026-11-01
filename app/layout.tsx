@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "에코스노우",
-  description: "기상·CCTV 노면 정보를 결합한 친환경 제설 의사결정 서비스",
+  description: "기관별 현장 기록·기준 기반 정량 살포·실제 사용량 비교를 지원하는 EcoSnow 관리자 서비스",
   other: {
     "codex-preview": "development",
   },
