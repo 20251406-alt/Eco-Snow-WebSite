@@ -41,6 +41,7 @@ import {
   saveStore,
   STORAGE_KEY,
 } from "./storage";
+import { DEMO_ORG_ID, withDemo } from "./demo";
 
 const menus = [
   "홈 대시보드",
@@ -281,10 +282,16 @@ export default function AdminConsole() {
     const timer = setTimeout(() => {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
-        const state = decodeStore(raw);
-        persisted.current = raw;
+        let state = decodeStore(raw);
+        const demoRequested = new URLSearchParams(window.location.search).get("demo") === "1";
+        if (demoRequested) {
+          const seeded = withDemo(state);
+          if (seeded !== state) saveStore(localStorage, seeded);
+          state = seeded;
+        }
+        persisted.current = demoRequested ? JSON.stringify(state) : raw;
         setData(state);
-        setOrgId(state.organizations[0]?.id ?? "");
+        setOrgId(demoRequested ? DEMO_ORG_ID : state.organizations[0]?.id ?? "");
         setLoaded(true);
       } catch (e) {
         setMessage(String(e));
@@ -456,6 +463,13 @@ export default function AdminConsole() {
             </select>
           </Field>
         </header>
+        {loaded && <div className="actions"><button onClick={() => {
+          const next = withDemo(data);
+          if (next === data || change(next, "데모 자료 준비", DEMO_ORG_ID)) {
+            setOrgId(DEMO_ORG_ID); setWorkId(""); setView(0);
+            setMessage("데모 기관으로 전환했습니다. 모든 값은 가상이며 실제 성과에 포함되지 않습니다.");
+          }
+        }}>데모 데이터로 둘러보기</button></div>}
         <p className="scope-banner">
           로컬 기록 모드 · 인증·서버 동기화 없음 · 같은 브라우저 사용자에게 모든
           로컬 기관이 보입니다. 기관 선택은 보안 권한이 아닙니다. 사진은 이
@@ -467,6 +481,12 @@ export default function AdminConsole() {
               ? "저장 준비 완료 · 실제 AI·티맵 연동 없음"
               : "기존 저장 자료를 확인하는 중입니다.")}
         </div>
+        {loaded && orgId === DEMO_ORG_ID && <Panel title="데모 체험 · 실제 운영 자료 아님">
+          <p>가상 기관·구역 2곳·제품·가상 적용 기준·완료 작업·작성 중 작업·제보를 넣었습니다. 검증된 제품 살포량이나 실제 성과가 아닙니다.</p>
+          <p>정문 예시: 120 ㎡ × 20 g/㎡ ÷ 1,000 = 안내 2.4 kg / 최초 2.5 kg + 추가 0.5 kg = 가상 실제 사용 3 kg.</p>
+          <p>절약 리포트는 데모 기록을 제외하므로 자료 없음·평가 보류가 정상입니다. 전년도 수치와 할인 정책은 임의로 확정하지 않았습니다.</p>
+          <div className="actions">{works.map((w) => <button key={w.id} onClick={() => {setWorkId(w.id);setCriterionId("");setView(2);}}>{w.zone.name} · {w.stage} 열기</button>)}</div>
+        </Panel>}
         {!loaded ? (
           <p>
             저장소를 읽을 수 없으면 브라우저 저장 권한을 확인하세요. 손상된 기존
