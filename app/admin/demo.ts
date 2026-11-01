@@ -18,7 +18,9 @@ export function withDemo(store: Store): Store {
 }
 
 
-function completeDemo(store: Store): Store {
+function completeDemo(store: Store): Store { return confirmDemo(bulkDemo(fillDemo(store))); }
+
+function fillDemo(store: Store): Store {
   const marker = "데모 예시 전체 채움 v2";
   if (store.audit.some((a) => a.orgId === DEMO_ORG_ID && a.action === marker)) return store;
   const orgId = DEMO_ORG_ID;
@@ -31,4 +33,50 @@ function completeDemo(store: Store): Store {
   });
   const setting = store.settings[orgId] || defaultSettings();
   return {...store,works,settings:{...store.settings,[orgId]:{...setting,policy:{...setting.policy,thresholds:setting.policy.thresholds.map((v,i)=>v ?? [5,10,20,30][i]),discounts:setting.policy.discounts.map((v,i)=>v ?? [1,2,3,5][i]),finalized:false}}},prior:[...store.prior,...store.zones.filter((z)=>z.orgId===orgId&&!store.prior.some((p)=>p.orgId===orgId&&p.zoneId===z.id)).map((z,i)=>({...stamp(),orgId,zoneId:z.id,area:z.area,season:"[데모] 2024–2025 겨울",start:"2024-12-01",end:"2025-03-31",kg:i===0?4:6,cost:i===0?12000:18000,source:"가상 사용 원장 · 실제 자료 아님",verified:false,demo:true}))],audit:[...store.audit,{at:now(),orgId,action:marker}]};
+}
+
+/** Read-only simulation for the demo report. Never save this view as real data. */
+export function demoComparisonData(store: Store): Store {
+  return {
+    ...store,
+    works: store.works.map((w) => w.orgId === DEMO_ORG_ID ? { ...w, demo: false } : w),
+    prior: store.prior.map((p) => p.orgId === DEMO_ORG_ID ? { ...p, demo: false } : p),
+  };
+}
+
+function bulkDemo(store: Store): Store {
+  const marker = "대량 데모 시나리오 v3";
+  if(store.audit.some(a=>a.orgId===DEMO_ORG_ID&&a.action===marker))return store;
+  const orgId=DEMO_ORG_ID, product=store.products.find(p=>p.orgId===orgId), criterion=store.criteria.find(c=>c.orgId===orgId);
+  if(!product||!criterion)return store;
+  const zones:Zone[]=[],works:Work[]=[],prior:Store["prior"]=[],reports:Store["reports"]=[];
+  const uses=["보행로","주차장","진입로","계단 앞 광장"];
+  for(let i=0;i<24;i++){
+    const area=80+i*20;
+    const zone:Zone={...stamp(),orgId,name:`[데모] ${String(i+1).padStart(2,"0")}구역 ${uses[i%4]}`,location:`가상 캠퍼스 ${i+1}동 주변`,area,boundary:`가상 표지 A${i+1}~B${i+1} / 전체 ${area}㎡`,use:uses[i%4],features:i%2?"그늘·경사·아스팔트":"평지·보도블록",important:i%5===0,productId:product.id};zones.push(zone);
+    let consumed=0;
+    for(let j=0;j<6;j++){
+      const month=["2025-12","2026-01","2026-02","2026-03"][j%4],day=String(5+j*3).padStart(2,"0"),date=`${month}-${day}`;
+      const o={...blankObservation(),state:"적설",depth:String(1+(i+j)%4),temperature:String(-2-(i%6)),area:String(area),removal:"일부 제거",source:"데모" as const,capturedAt:`${date}T08:00`,manualReason:"대량 시나리오의 가상 측정값",rangeConfirmed:true,before:{id:"ecosnow-demo-before",name:"데모 사용 전 도식.svg",capturedAt:`${date}T08:00`}};
+      const kg=Math.round(area*20/1000*(0.8+(i+j)%5*0.1)*1000)/1000;
+      const apps:Work["applications"]=[{id:stamp().id,kg,area,product:structuredClone(product),at:`${date}T09:00`,cost:Math.round(kg*3000),note:"가상 최초 살포"}];
+      if((i+j)%4===0)apps.push({id:stamp().id,kg:0.5,area:20,product:structuredClone(product),at:`${date}T10:00`,cost:1500,note:"그늘 구간 가상 추가 살포"});
+      consumed+=apps.reduce((n,a)=>n+a.kg,0);
+      const pending=j===5&&i%3===0;
+      works.push({...stamp(),orgId,zone:structuredClone(zone),product:structuredClone(product),observation:o,calculation:calculate(zone,product,criterion,o),stage:pending?"후속 확인 대기":"기록 완료",applications:apps,followup:pending?null:{photo:{id:"ecosnow-demo-after",name:"데모 사용 후 도식.svg",capturedAt:`${date}T11:00`},at:`${date}T11:00`,remaining:(i+j)%4===0?"잔설 있음, 추가 확인 필요":"육안상 대부분 제거 (가상)",removal:(i+j)%4===0?"삽으로 추가 제거":"추가 제거 없음",manualReason:"가상 도식 기반 수동 확인 예시",note:"실제 실험·관찰 아님"},operator:`데모 담당자 ${i%4+1}`,note:`시험 시나리오 ${i+1}-${j+1} · 실제 성과 제외`,demo:true,reportId:"",confirmedAt:pending?null:now()});
+    }
+    const previous=Math.round(consumed*(i%6===0?0.9:1.25)*1000)/1000;
+    prior.push({...stamp(),orgId,zoneId:zone.id,area,season:"[데모] 전년도 겨울",start:"2024-12-01",end:"2025-03-31",kg:previous,cost:Math.round(previous*3000),source:"가상 전년도 사용 원장 · 실제 자료 아님",verified:false,demo:true});
+    if(i%2===0)reports.push({...stamp(),orgId,zoneId:zone.id,occurredAt:"2026-02-20T08:00",receivedAt:"2026-02-20T08:10",location:zone.location,content:"눈이 남아 있어 담당자 확인이 필요합니다 (가상 제보)",source:"명시적 대량 데모 · 외부 API 미연결",status:"확인 요청",demo:true});
+  }
+  return {...store,zones:[...store.zones,...zones],works:[...store.works,...works],prior:[...store.prior,...prior],reports:[...store.reports,...reports],audit:[...store.audit,{orgId,at:now(),action:marker}]};
+}
+
+
+function confirmDemo(store: Store): Store {
+  const action = "체험용 정책 확정 v4";
+  if(store.audit.some(a=>a.orgId===DEMO_ORG_ID&&a.action===action)) return store;
+  const orgId=DEMO_ORG_ID, current=store.settings[orgId];
+  if(!current)return store;
+  return {...store,criteria:store.criteria.map(c=>c.orgId===orgId?{...c,verified:true,confirmedBy:"데모 운영자 · 가상 확정",updatedAt:now()}:c),prior:store.prior.map(p=>p.orgId===orgId&&p.demo?{...p,verified:true,updatedAt:now()}:p),settings:{...store.settings,[orgId]:{...current,season:{...current.season,ended:true,comparable:true,complete:true,necessaryWorkConfirmed:true},policy:{thresholds:[5,10,20,30],discounts:[1,2,3,5],finalized:true}}},audit:[...store.audit,{at:now(),orgId,action}]};
 }

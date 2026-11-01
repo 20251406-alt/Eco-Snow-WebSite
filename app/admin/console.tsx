@@ -41,7 +41,7 @@ import {
   saveStore,
   STORAGE_KEY,
 } from "./storage";
-import { DEMO_ORG_ID, withDemo } from "./demo";
+import { DEMO_ORG_ID, withDemo, demoComparisonData } from "./demo";
 
 const menus = [
   "홈 대시보드",
@@ -327,7 +327,8 @@ export default function AdminConsole() {
   const reports = data.reports.filter((r) => r.orgId === orgId);
   const work = works.find((w) => w.id === workId);
   const settings = data.settings[orgId] || defaultSettings();
-  const report = compare(data, orgId);
+  const reportData = view === 4 && orgId === DEMO_ORG_ID ? demoComparisonData(data) : data;
+  const report = compare(reportData, orgId);
   function setting(next: typeof settings) {
     change(
       { ...data, settings: { ...data.settings, [orgId]: next } },
@@ -482,10 +483,10 @@ export default function AdminConsole() {
               : "기존 저장 자료를 확인하는 중입니다.")}
         </div>
         {loaded && orgId === DEMO_ORG_ID && <Panel title="데모 체험 · 실제 운영 자료 아님">
-          <p>가상 기관·구역 2곳·제품·가상 적용 기준·완료 작업·후속 확인 대기 작업·예시 도식·전년도 자료·보상 정책·제보를 넣었습니다. 검증된 제품 살포량이나 실제 성과가 아닙니다.</p>
+          <p>가상 기관·관리 구역 26곳·작업 146건·추가 살포·후속 확인 대기·예시 도식·전년도 자료·보상 정책·제보를 넣었습니다. 검증된 제품 살포량이나 실제 성과가 아닙니다.</p>
           <p>정문 예시: 120 ㎡ × 20 g/㎡ ÷ 1,000 = 안내 2.4 kg / 최초 2.5 kg + 추가 0.5 kg = 가상 실제 사용 3 kg.</p>
-          <p>절약 리포트는 데모 기록을 제외하므로 자료 없음·평가 보류가 정상입니다. 전년도 자료와 할인 정책 입력란에도 데모 값을 넣었으며, 정책은 미확정 상태입니다. 실제 성과로 집계하지 않습니다.</p>
-          <div className="actions">{works.map((w) => <button key={w.id} onClick={() => {setWorkId(w.id);setCriterionId("");setView(2);}}>{w.zone.name} · {w.stage} 열기</button>)}</div>
+          <p>실제 집계는 데모를 제외합니다. 절약 리포트 메뉴에서는 데모 기관에 한해 가상 전년도·올해 비교를 미리 볼 수 있습니다. 전년도 자료와 할인 정책 입력란에도 데모 값을 넣었으며, 정책은 데모 기관에서만 확정 상태입니다. 실제 성과로 집계하지 않습니다.</p>
+          <div className="actions">{works.slice(0,4).map((w) => <button key={w.id} onClick={() => {setWorkId(w.id);setCriterionId("");setView(2);}}>{w.zone.name} · {w.stage} 열기</button>)}</div>
         </Panel>}
         {!loaded ? (
           <p>
@@ -1480,6 +1481,7 @@ export default function AdminConsole() {
                 )}
                 {view === 4 && (
                   <>
+                    {orgId === DEMO_ORG_ID && <Panel title="데모 비교 미리보기 · 실제 절감 성과 아님"><p>전년도·올해 모두 가상 자료입니다. 이 화면에서만 시험용으로 비교하며 실제 집계·등급·배지에는 반영되지 않습니다. 자료 미확인과 후속 확인 대기는 평가 보류로 유지합니다.</p></Panel>}
                     <Panel
                       title={
                         settings.season.ended
@@ -1607,7 +1609,7 @@ export default function AdminConsole() {
                       {!report.current.applications.length && <p>자료 없음</p>}
                       {zones.map((z) => {
                         const v = actualUsage(
-                          works,
+                          reportData.works,
                           orgId,
                           settings.season.start,
                           settings.season.end,
@@ -2286,7 +2288,7 @@ export default function AdminConsole() {
                             name="finalized"
                             defaultChecked={settings.policy.finalized}
                           />
-                          운영자가 정책을 확정했습니다
+                          운영자가 정책을 확정했습니다 (데모 기관에서는 체험용 확정)
                         </label>
                         <button>보상 정책 저장</button>
                       </form>
