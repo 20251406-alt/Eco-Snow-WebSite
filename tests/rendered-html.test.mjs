@@ -33,6 +33,6 @@ test("renders development preview metadata", async () => {
   assert.match(html, developmentPreviewMeta);
   assert.match(html, /현장 확인·정량 살포/);
   assert.match(html, /관리 구역/);
-  assert.match(html, /로컬 기록 모드/);
+  assert.match(html, /로컬 저장/);
   assert.doesNotMatch(html, /종합 결빙 위험도|예방 살포 권장|기상 조건 입력/);
 });

@@ -1,3 +1,4 @@
+import type { TrialSubscription } from "./plans";
 export type Source = "현장 측정" | "관리자 입력" | "데모";
 export type Stamp = { id: string; createdAt: string; updatedAt: string };
 export type Organization = Stamp & { name: string; administrator: string };
@@ -143,6 +144,8 @@ export type Evaluation = Stamp & {
 };
 export type Audit = { at: string; orgId: string; action: string };
 export type Store = {
+  subscriptions?: Record<string, TrialSubscription>;
+  inquiries?: Record<string, string>;
   version: 1;
   organizations: Organization[];
   zones: Zone[];
@@ -451,7 +454,10 @@ export function compare(
   const current = actualUsage(store.works, orgId, s.start, s.end);
   const priors = store.prior.filter(
     (p) =>
-      !p.demo && p.orgId === orgId && p.start === s.priorStart && p.end === s.priorEnd,
+      !p.demo &&
+      p.orgId === orgId &&
+      p.start === s.priorStart &&
+      p.end === s.priorEnd,
   );
   const previous = priors.length
     ? priors.reduce((sum, p) => sum + p.kg, 0)

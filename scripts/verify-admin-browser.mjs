@@ -27,6 +27,10 @@ await page.getByLabel("기관명", { exact: true }).fill("테스트 학교");
 await page.getByLabel("관리자", { exact: true }).fill("담당자");
 await page.getByRole("button", { name: "기관 등록", exact: true }).click();
 await nav("기관 설정");
+await page
+  .getByRole("group", { name: "기관 설정 분류" })
+  .getByRole("button", { name: "제품·제조 배치", exact: true })
+  .click();
 let p = panel("제품·제조 배치 관리");
 await p.getByLabel("제품명").fill("에코스노우");
 await p.getByLabel("제조 배치").fill("B1");
@@ -54,11 +58,16 @@ await page.getByLabel("노면 온도").fill("-3");
 await page.getByLabel("관찰·촬영 시각").fill("2025-12-10T09:00");
 await page.getByLabel("사진 없이 수동 기록하는 사유").fill("직접 측정");
 await page.getByLabel("사진·수동 관찰 범위").check();
+await page.getByRole("button", { name: "관찰 확인·산정으로" }).click();
 await page.getByRole("button", { name: "입력 확인·산정" }).click();
 await page
   .getByRole("heading", { name: "적용 기준 확인 필요", exact: true })
   .waitFor();
 await nav("기관 설정");
+await page
+  .getByRole("group", { name: "기관 설정 분류" })
+  .getByRole("button", { name: "제품 적용 기준", exact: true })
+  .click();
 p = panel("제품 적용 기준 관리");
 await p.getByLabel("적용 제품·배치").selectOption({ label: "에코스노우 · B1" });
 for (const [label, value] of [
@@ -82,6 +91,10 @@ await page
   .waitFor();
 assert.match(await page.locator(".calculation").innerText(), /2.4 kg/);
 await page
+  .locator(".workflow-nav")
+  .getByRole("button", { name: /현장 관찰/ })
+  .click();
+await page
   .getByLabel("사진 등록 (선택, 이미지 8MB 이하)", { exact: true })
   .setInputFiles({
     name: "현장.png",
@@ -98,21 +111,24 @@ await page
   .getByRole("button", { name: "사진 분석 가능 여부 확인", exact: true })
   .click();
 await page.getByText("사진 분석 모델 미연결.", { exact: false }).waitFor();
+await page.getByRole("button", { name: "관찰 확인·산정으로" }).click();
 await page.getByRole("button", { name: "입력 확인·산정" }).click();
-await page.getByRole("button", { name: "다음 상태로 진행" }).click();
+await page
+  .getByRole("button", { name: "현장 확인 완료·실제 작업으로" })
+  .click();
 p = panel("3. 실제 작업·추가 살포");
 await p.getByLabel("실제 사용량").fill("2.5");
 await p.getByLabel("작업 시각", { exact: true }).fill("2025-12-10T10:00");
 await p.getByRole("button", { name: "실제 사용 기록 추가" }).click();
-await page.getByRole("button", { name: "다음 상태로 진행" }).click();
-await page.getByRole("button", { name: "다음 상태로 진행" }).click();
+await page.getByRole("button", { name: "작업 완료·후속 확인으로" }).click();
+await page.getByRole("button", { name: "후속 확인 대기로 전환" }).click();
 p = panel("4. 후속 확인");
 await p.getByLabel("확인·촬영 시각").fill("2025-12-10T11:00");
 await p.getByLabel("남은 눈").fill("그늘 잔설, 효과 부족");
 await p.getByLabel("추가 눈 제거 여부").fill("삽으로 추가 제거");
 await p.getByLabel("후속 사진이 없는").fill("육안 확인");
 await p.getByRole("button", { name: "후속 관찰 저장" }).click();
-await page.getByRole("button", { name: "다음 상태로 진행" }).click();
+await page.getByRole("button", { name: "후속 확인 완료·기록 마침" }).click();
 await nav("작업 이력");
 assert.match(await panel("작업 이력").innerText(), /기록 완료/);
 assert.match(await panel("작업 이력").innerText(), /2.5 kg/);
@@ -131,12 +147,16 @@ await page.screenshot({
   fullPage: true,
 });
 await nav("기관 설정");
+await page
+  .getByRole("group", { name: "기관 설정 분류" })
+  .getByRole("button", { name: "기관 기본 정보", exact: true })
+  .click();
 p = panel("기관·관리자 등록");
 await p.getByLabel("기관명", { exact: true }).fill("다른 기관");
 await p.getByLabel("관리자", { exact: true }).fill("다른 담당자");
 await p.getByRole("button", { name: "기관 등록", exact: true }).click();
 await nav("작업 이력");
-assert.match(await panel("작업 이력").innerText(), /자료 없음/);
+assert.match(await panel("작업 이력").innerText(), /작업 자료가 없습니다/);
 assert.doesNotMatch(await panel("작업 이력").innerText(), /2.5 kg/);
 await page.setViewportSize({ width: 390, height: 844 });
 assert.equal(
