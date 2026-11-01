@@ -92,6 +92,7 @@ export type Work = Stamp & {
   confirmedAt: string | null;
 };
 export type Prior = Stamp & {
+  demo?: boolean;
   orgId: string;
   season: string;
   zoneId: string;
@@ -450,7 +451,7 @@ export function compare(
   const current = actualUsage(store.works, orgId, s.start, s.end);
   const priors = store.prior.filter(
     (p) =>
-      p.orgId === orgId && p.start === s.priorStart && p.end === s.priorEnd,
+      !p.demo && p.orgId === orgId && p.start === s.priorStart && p.end === s.priorEnd,
   );
   const previous = priors.length
     ? priors.reduce((sum, p) => sum + p.kg, 0)

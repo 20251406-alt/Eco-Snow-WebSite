@@ -63,6 +63,11 @@ export async function getPhoto(
   orgId: string,
   photoId: string,
 ): Promise<Blob | undefined> {
+  if (orgId === "ecosnow-demo-organization-v1" && ["ecosnow-demo-before", "ecosnow-demo-after"].includes(photoId)) {
+    const response = await fetch(`/demo/${photoId}.svg`);
+    if (!response.ok) throw new Error("데모 도식을 불러오지 못했습니다.");
+    return response.blob();
+  }
   const db = await openPhotos();
   try {
     return await new Promise<Blob | undefined>((resolve, reject) => {
