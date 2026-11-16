@@ -18,7 +18,7 @@ export function withDemo(store: Store): Store {
 }
 
 
-function completeDemo(store: Store): Store { return confirmDemo(bulkDemo(fillDemo(store))); }
+function completeDemo(store: Store): Store { return predictionDemo(confirmDemo(bulkDemo(fillDemo(store)))); }
 
 function fillDemo(store: Store): Store {
   const marker = "데모 예시 전체 채움 v2";
@@ -79,4 +79,13 @@ function confirmDemo(store: Store): Store {
   const orgId=DEMO_ORG_ID, current=store.settings[orgId];
   if(!current)return store;
   return {...store,criteria:store.criteria.map(c=>c.orgId===orgId?{...c,verified:true,confirmedBy:"데모 운영자 · 가상 확정",updatedAt:now()}:c),prior:store.prior.map(p=>p.orgId===orgId&&p.demo?{...p,verified:true,updatedAt:now()}:p),settings:{...store.settings,[orgId]:{...current,season:{...current.season,ended:true,comparable:true,complete:true,necessaryWorkConfirmed:true},policy:{thresholds:[5,10,20,30],discounts:[1,2,3,5],finalized:true}}},audit:[...store.audit,{at:now(),orgId,action}]};
+}
+
+
+function predictionDemo(store: Store): Store {
+  const orgId=DEMO_ORG_ID,action="살포량 예상 시연 기준 v5";
+  if(store.audit.some(a=>a.orgId===orgId&&a.action===action))return store;
+  const product=store.products.find(p=>p.orgId===orgId);if(!product)return store;
+  const criteria=[{maxDepth:1,rate:15},{maxDepth:3,rate:20},{maxDepth:5,rate:25}].map((rule,i)=>({...stamp(),id:`demo-prediction-rate-${i+1}`,orgId,productId:product.id,...rule,verified:true,confirmedBy:"데모 운영자 · 시연 가정 확인",source:`시연용 가상 기준 · 적설 ${rule.maxDepth}cm 이하 / ${rule.rate}g/㎡ (실제 사용 금지)`,minTemp:-10,maxTemp:2,conditions:"필요 살포량 예측 UI를 시험하는 임의 기준입니다. 실제 제품 성능이나 검증된 권장량이 아닙니다.",removal:"일부 제거",surface:"적설"}));
+  return {...store,criteria:[...store.criteria,...criteria],audit:[...store.audit,{orgId,at:now(),action}]};
 }

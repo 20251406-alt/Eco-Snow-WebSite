@@ -37,6 +37,7 @@ import {
   type Zone,
   type Photo,
   type Criterion,
+  type Calculation,
   type Policy,
   type Season,
 } from "./domain";
@@ -55,6 +56,9 @@ import WorkHistory from "./history";
 import Icon from "./ui-icon";
 import { getPlan, type TrialSubscription } from "./plans";
 
+import DemoWorkbench from "./demo-workbench";
+import DemoSeason from "./demo-season";
+import { demoTimeAfter } from "./demo-prediction";
 import Walkthrough, { WelcomeGuide } from "./walkthrough";
 import {
   createPracticeStore,
@@ -737,6 +741,37 @@ export default function AdminConsole() {
       setView(2);
     }
   }
+  function startDemoPrediction(zone: Zone, result: Calculation) {
+    if (orgId !== DEMO_ORG_ID || result.kg === null) return;
+    const product = products.find((p) => p.id === zone.productId) || null;
+    const next: Work = {
+      ...stamp(),
+      orgId,
+      zone: structuredClone(zone),
+      product: product ? structuredClone(product) : null,
+      observation: structuredClone(result.inputs),
+      calculation: structuredClone(result),
+      stage: "현장 확인",
+      applications: [],
+      followup: null,
+      operator: "데모 담당자",
+      note: "현재 적설·면적 기반 필요량 예상에서 시작한 시연 작업. 실제 실적 제외.",
+      demo: true,
+      reportId: "",
+      confirmedAt: now(),
+    };
+    if (
+      change(
+        { ...data, works: [...data.works, next] },
+        "데모 예상량 확인·작업 시작",
+      )
+    ) {
+      setWorkId(next.id);
+      setCriterionId(result.criterion?.id || "");
+      setFieldStep(2);
+      setView(2);
+    }
+  }
   function observation(
     key: keyof Work["observation"],
     value: string | boolean | Photo,
@@ -1129,6 +1164,13 @@ export default function AdminConsole() {
                 )}
                 {org && (
                   <>
+                    {view === 0 && orgId === DEMO_ORG_ID && (
+                      <DemoWorkbench
+                        data={data}
+                        onStart={startDemoPrediction}
+                        onNavigate={setView}
+                      />
+                    )}
                     {view === 0 && (
                       <Dashboard
                         data={data}
@@ -1821,6 +1863,11 @@ export default function AdminConsole() {
                                         name="kg"
                                         label="실제 사용량 (kg)"
                                         type="number"
+                                        value={
+                                          orgId === DEMO_ORG_ID
+                                            ? (work.calculation?.kg ?? "")
+                                            : ""
+                                        }
                                         required
                                       />
                                       <Text
@@ -1834,17 +1881,37 @@ export default function AdminConsole() {
                                         name="at"
                                         label="작업 시각"
                                         type="datetime-local"
-                                        value={localTime()}
+                                        value={
+                                          orgId === DEMO_ORG_ID
+                                            ? demoTimeAfter(
+                                                work.observation.capturedAt,
+                                              )
+                                            : localTime()
+                                        }
                                         required
                                       />
                                       <Text
                                         name="cost"
                                         label="실제 사용 비용 (원, 없으면 미입력)"
                                         type="number"
+                                        value={
+                                          orgId === DEMO_ORG_ID &&
+                                          work.calculation?.kg !== null &&
+                                          work.calculation?.kg !== undefined
+                                            ? Math.round(
+                                                work.calculation.kg * 750,
+                                              )
+                                            : ""
+                                        }
                                       />
                                       <Text
                                         name="note"
                                         label="작업·미살포·추가 처리 사유"
+                                        value={
+                                          orgId === DEMO_ORG_ID
+                                            ? "시연용 사용 기록 · 비용은 가상 단가 750원/kg 가정"
+                                            : ""
+                                        }
                                       />
                                     </div>
                                     <button
@@ -1962,30 +2029,58 @@ export default function AdminConsole() {
                                         name="at"
                                         label="확인·촬영 시각"
                                         type="datetime-local"
-                                        value={work.followup?.at || localTime()}
+                                        value={
+                                          work.followup?.at ||
+                                          (orgId === DEMO_ORG_ID
+                                            ? demoTimeAfter(
+                                                work.applications.at(-1)?.at ||
+                                                  work.observation.capturedAt,
+                                              )
+                                            : localTime())
+                                        }
                                         required
                                       />
                                       <Text
                                         name="remaining"
                                         label="남은 눈·얼음·효과 부족 관찰"
-                                        value={work.followup?.remaining}
+                                        value={
+                                          work.followup?.remaining ||
+                                          (orgId === DEMO_ORG_ID
+                                            ? "그늘 구간에 잔설 일부 남음 (더미 관찰)"
+                                            : "")
+                                        }
                                         required
                                       />
                                       <Text
                                         name="removal"
                                         label="추가 눈 제거 여부·방법"
-                                        value={work.followup?.removal}
+                                        value={
+                                          work.followup?.removal ||
+                                          (orgId === DEMO_ORG_ID
+                                            ? "삽으로 잔설 제거 (더미)"
+                                            : "")
+                                        }
                                         required
                                       />
                                       <Text
                                         name="manualReason"
                                         label="후속 사진이 없는 경우 수동 기록 사유"
-                                        value={work.followup?.manualReason}
+                                        value={
+                                          work.followup?.manualReason ||
+                                          (orgId === DEMO_ORG_ID
+                                            ? "시연용 수동 후속 확인"
+                                            : "")
+                                        }
                                       />
                                       <Text
                                         name="note"
                                         label="후속 메모"
-                                        value={work.followup?.note}
+                                        value={
+                                          work.followup?.note ||
+                                          (orgId === DEMO_ORG_ID
+                                            ? "예상량과 실제 사용·잔설을 비교하는 가상 기록"
+                                            : "")
+                                        }
                                       />
                                     </div>
                                     <button data-guide="followup-save">
@@ -2360,7 +2455,10 @@ export default function AdminConsole() {
                         </Panel>
                       </>
                     )}
-                    {view === 5 && (
+                    {view === 5 && orgId === DEMO_ORG_ID && (
+                      <DemoSeason data={data} onReport={() => setView(4)} />
+                    )}
+                    {view === 5 && orgId !== DEMO_ORG_ID && (
                       <>
                         <Panel title="기관 4단계 성장·보상">
                           <p>

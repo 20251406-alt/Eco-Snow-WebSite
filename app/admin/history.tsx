@@ -17,9 +17,11 @@ export default function WorkHistory({
 }) {
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(0);
-  const filtered = works.filter((w) =>
-    `${w.zone.name} ${w.stage} ${w.product?.name || ""}`.includes(query),
-  );
+  const filtered = works
+    .filter((w) =>
+      `${w.zone.name} ${w.stage} ${w.product?.name || ""}`.includes(query),
+    )
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
   const pageCount = Math.max(1, Math.ceil(filtered.length / 20));
   const currentPage = Math.min(page, pageCount - 1);
   const shown = filtered.slice(currentPage * 20, currentPage * 20 + 20);
@@ -81,7 +83,9 @@ export default function WorkHistory({
                 </td>
                 <td className="numeric">{quantity(w)}</td>
                 <td>
-                  <button data-guide="history-open" onClick={() => onOpen(w)}>조회·수정</button>
+                  <button data-guide="history-open" onClick={() => onOpen(w)}>
+                    조회·수정
+                  </button>
                   <details className="row-menu">
                     <summary>더 보기</summary>
                     <button
@@ -127,7 +131,9 @@ export default function WorkHistory({
               </div>
             </dl>
             <div className="actions">
-              <button data-guide="history-open" onClick={() => onOpen(w)}>조회·수정</button>
+              <button data-guide="history-open" onClick={() => onOpen(w)}>
+                조회·수정
+              </button>
               <details>
                 <summary>더 보기</summary>
                 <button className="danger-button" onClick={() => onDelete(w)}>
