@@ -10,11 +10,13 @@ export default function Dashboard({
   orgId,
   onOpen,
   onNavigate,
+  compact = false,
 }: {
   data: Store;
   orgId: string;
   onOpen: (w: Work) => void;
   onNavigate: (v: number) => void;
+  compact?: boolean;
 }) {
   const zones = data.zones.filter((z) => z.orgId === orgId && !z.archived),
     works = data.works.filter((w) => w.orgId === orgId),
@@ -38,55 +40,59 @@ export default function Dashboard({
   );
   return (
     <div className="dashboard-page">
-      <div className="dashboard-actions">
-        <div>
-          <h2>오늘 확인할 현장을 한눈에</h2>
-          <p>미완료 기록과 후속 확인부터 이어서 진행하세요.</p>
-        </div>
-        <div className="actions">
-          <button className="primary" onClick={() => onNavigate(2)}>
-            현장 기록 시작
-          </button>
-          <button onClick={() => onNavigate(1)}>관리 구역 추가</button>
-        </div>
-      </div>
-      <section className="kpi-grid" aria-label="기관 업무 요약">
-        {[
-          {
-            label: "등록 관리 구역",
-            value: zones.length ? `${zones.length}곳` : "자료 없음",
-            note: "현재 등록 · 보관 구역 제외",
-            icon: 1,
-          },
-          {
-            label: "진행 중 작업",
-            value: works.length ? `${pending.length}건` : "자료 없음",
-            note: "전체 기록 · 완료 전 상태",
-            icon: 2,
-          },
-          {
-            label: "후속 확인 대기",
-            value: works.length ? `${follow.length}건` : "자료 없음",
-            note: "추가 살포 후 재확인 포함",
-            icon: 3,
-          },
-          {
-            label: "선택 기간 실제 사용량",
-            value: f(usage.kg, " kg"),
-            note: period + " · 데모 제외",
-            icon: 4,
-          },
-        ].map((k) => (
-          <article className="kpi-card" key={k.label}>
-            <span className="kpi-icon">
-              <Icon index={k.icon} />
-            </span>
-            <span>{k.label}</span>
-            <strong>{k.value}</strong>
-            <small>{k.note}</small>
-          </article>
-        ))}
-      </section>
+      {!compact && (
+        <>
+          <div className="dashboard-actions">
+            <div>
+              <h2>오늘 확인할 현장을 한눈에</h2>
+              <p>미완료 기록과 후속 확인부터 이어서 진행하세요.</p>
+            </div>
+            <div className="actions">
+              <button className="primary" onClick={() => onNavigate(2)}>
+                현장 기록 시작
+              </button>
+              <button onClick={() => onNavigate(1)}>관리 구역 추가</button>
+            </div>
+          </div>
+          <section className="kpi-grid" aria-label="기관 업무 요약">
+            {[
+              {
+                label: "등록 관리 구역",
+                value: zones.length ? `${zones.length}곳` : "자료 없음",
+                note: "현재 등록 · 보관 구역 제외",
+                icon: 1,
+              },
+              {
+                label: "진행 중 작업",
+                value: works.length ? `${pending.length}건` : "자료 없음",
+                note: "전체 기록 · 완료 전 상태",
+                icon: 2,
+              },
+              {
+                label: "후속 확인 대기",
+                value: works.length ? `${follow.length}건` : "자료 없음",
+                note: "추가 살포 후 재확인 포함",
+                icon: 3,
+              },
+              {
+                label: "선택 기간 실제 사용량",
+                value: f(usage.kg, " kg"),
+                note: period + " · 데모 제외",
+                icon: 4,
+              },
+            ].map((k) => (
+              <article className="kpi-card" key={k.label}>
+                <span className="kpi-icon">
+                  <Icon index={k.icon} />
+                </span>
+                <span>{k.label}</span>
+                <strong>{k.value}</strong>
+                <small>{k.note}</small>
+              </article>
+            ))}
+          </section>
+        </>
+      )}
       <div className="dashboard-grid">
         <section className="panel">
           <div className="section-heading">
@@ -143,23 +149,27 @@ export default function Dashboard({
             <p>청구 예정 없음</p>
             <button onClick={() => onNavigate(6)}>요금제·구독 보기</button>
           </section>
-          <section className="panel">
-            <h2>사용량 비교 요약</h2>
-            <p>{period}</p>
-            <strong className="summary-number">
-              {f(report.savings, " %")}
-            </strong>
-            <p>
-              {report.previous === null
-                ? "전년도 실제 사용 자료를 등록하면 비교할 수 있습니다."
-                : report.status}
-            </p>
-            <button
-              onClick={() => onNavigate(report.previous === null ? 7 : 4)}
-            >
-              {report.previous === null ? "비교 자료 등록" : "절약 리포트 보기"}
-            </button>
-          </section>
+          {!compact && (
+            <section className="panel">
+              <h2>사용량 비교 요약</h2>
+              <p>{period}</p>
+              <strong className="summary-number">
+                {f(report.savings, " %")}
+              </strong>
+              <p>
+                {report.previous === null
+                  ? "전년도 실제 사용 자료를 등록하면 비교할 수 있습니다."
+                  : report.status}
+              </p>
+              <button
+                onClick={() => onNavigate(report.previous === null ? 7 : 4)}
+              >
+                {report.previous === null
+                  ? "비교 자료 등록"
+                  : "절약 리포트 보기"}
+              </button>
+            </section>
+          )}
         </div>
       </div>
       <section className="panel">

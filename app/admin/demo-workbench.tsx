@@ -37,7 +37,7 @@ export default function DemoWorkbench({
     { name: "기준 밖 조건", depth: "8", temperature: "-15" },
   ];
   return (
-    <section className="panel demo-workbench">
+    <section className="panel demo-workbench" id="demo-dosage">
       <div className="section-heading">
         <div>
           <span className="badge-text">핵심 기능 시연 · 모든 값은 더미</span>

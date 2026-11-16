@@ -52,6 +52,7 @@ import { DEMO_ORG_ID, withDemo, demoComparisonData } from "./demo";
 
 import Pricing from "./pricing";
 import Dashboard from "./dashboard";
+import HomeVisuals from "./home-visuals";
 import WorkHistory from "./history";
 import Icon from "./ui-icon";
 import { getPlan, type TrialSubscription } from "./plans";
@@ -1164,6 +1165,13 @@ export default function AdminConsole() {
                 )}
                 {org && (
                   <>
+                    {view === 0 && (
+                      <HomeVisuals
+                        data={data}
+                        orgId={orgId}
+                        onNavigate={setView}
+                      />
+                    )}
                     {view === 0 && orgId === DEMO_ORG_ID && (
                       <DemoWorkbench
                         data={data}
@@ -1173,6 +1181,7 @@ export default function AdminConsole() {
                     )}
                     {view === 0 && (
                       <Dashboard
+                        compact
                         data={data}
                         orgId={orgId}
                         onOpen={openWork}
