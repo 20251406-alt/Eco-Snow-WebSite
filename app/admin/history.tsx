@@ -81,7 +81,7 @@ export default function WorkHistory({
                 </td>
                 <td className="numeric">{quantity(w)}</td>
                 <td>
-                  <button onClick={() => onOpen(w)}>조회·수정</button>
+                  <button data-guide="history-open" onClick={() => onOpen(w)}>조회·수정</button>
                   <details className="row-menu">
                     <summary>더 보기</summary>
                     <button
@@ -127,7 +127,7 @@ export default function WorkHistory({
               </div>
             </dl>
             <div className="actions">
-              <button onClick={() => onOpen(w)}>조회·수정</button>
+              <button data-guide="history-open" onClick={() => onOpen(w)}>조회·수정</button>
               <details>
                 <summary>더 보기</summary>
                 <button className="danger-button" onClick={() => onDelete(w)}>

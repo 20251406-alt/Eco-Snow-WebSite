@@ -127,6 +127,7 @@ export default function Pricing({
             </ul>
             <button
               className="primary"
+              data-guide={p.id === "school" ? "plan-school" : undefined}
               onClick={() => {
                 if (p.id === "municipal") {
                   setInquiryKind("municipal");

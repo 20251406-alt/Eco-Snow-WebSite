@@ -11,6 +11,7 @@ const b = await chromium.launch({
   args: ["--no-sandbox"],
 });
 const context = await b.newContext();
+await context.addInitScript(()=>localStorage.setItem("ecosnow-onboarding-v1",JSON.stringify({status:"dismissed"})));
 const p = await context.newPage();
 p.setDefaultTimeout(10000);
 const errors = [];

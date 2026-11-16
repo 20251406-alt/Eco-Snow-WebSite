@@ -8,6 +8,7 @@ const browser = await chromium.launch({
   args: ["--no-sandbox"],
 });
 const context = await browser.newContext();
+await context.addInitScript(()=>localStorage.setItem("ecosnow-onboarding-v1",JSON.stringify({status:"dismissed"})));
 const page = await context.newPage();
 const errors = [];
 page.on("pageerror", (e) => errors.push(e.message));
@@ -185,6 +186,7 @@ assert.equal(
 );
 const quota = await browser.newContext();
 await quota.addInitScript(() => {
+  localStorage.setItem("ecosnow-onboarding-v1",JSON.stringify({status:"dismissed"}));
   const original = Storage.prototype.setItem;
   Storage.prototype.setItem = function (key, value) {
     if (key === "ecosnow-admin-v1")

@@ -9,6 +9,7 @@ import {
   useEffect,
   useRef,
   useState,
+  useMemo,
   type FormEvent,
   type ReactNode,
   type ReactElement,
@@ -54,6 +55,39 @@ import WorkHistory from "./history";
 import Icon from "./ui-icon";
 import { getPlan, type TrialSubscription } from "./plans";
 
+import Walkthrough, { WelcomeGuide } from "./walkthrough";
+import {
+  createPracticeStore,
+  guideSteps,
+  GUIDE_KEY,
+  PRACTICE_KEY,
+  PRACTICE_ORG,
+  type GuideStep,
+} from "./walkthrough-model";
+
+const guideFields: Record<string, string> = {
+  "작업 시각": "application-time",
+  "확인·촬영 시각": "followup-time",
+  구역명: "zone-name",
+  위치: "zone-location",
+  "관리 면적 (㎡)": "zone-area",
+  "경계·촬영 범위 식별 정보": "zone-boundary",
+  "용도 (보행로·진입로 등)": "zone-use",
+  "눈·얼음 상태": "observation-state",
+  "사전 눈 제거": "observation-removal",
+  "실측 적설 깊이 (cm)": "observation-depth",
+  "실제 처리 면적 (㎡)": "observation-area",
+  "노면 온도 (℃)": "observation-temperature",
+  "관찰·촬영 시각": "observation-time",
+  "사진 없이 수동 기록하는 사유": "observation-manual",
+  "제품별 적용 기준": "criterion-select",
+  "실제 사용량 (kg)": "application-kg",
+  "남은 눈·얼음·효과 부족 관찰": "followup-remaining",
+  "추가 눈 제거 여부·방법": "followup-removal",
+  "후속 사진이 없는 경우 수동 기록 사유": "followup-manual",
+  제품명: "product-name",
+  "제조 배치": "product-batch",
+};
 const SettingsContext = createContext<number | null>(null);
 const ValidationContext = createContext("");
 const settingsGroups = [
@@ -104,7 +138,7 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
     /필요|입력|오류|실패|Error/.test(message),
   );
   return (
-    <label className="admin-field">
+    <label className="admin-field" data-guide={guideFields[label]}>
       <span>
         {label}
         {field?.props.required && (
@@ -208,7 +242,14 @@ function Checked({
   onChange: (s: boolean) => void;
 }) {
   return (
-    <label className="check">
+    <label
+      className="check"
+      data-guide={
+        label.startsWith("사진·수동 관찰 범위")
+          ? "observation-range"
+          : undefined
+      }
+    >
       <input
         type="checkbox"
         checked={checked}
@@ -249,7 +290,17 @@ function Panel({
         titleGroup[title] !== group;
   return (
     <section className="panel admin-panel" hidden={hidden}>
-      <h2>{title}</h2>
+      <h2
+        data-guide={
+          title === "기관 4단계 성장·보상"
+            ? "growth-title"
+            : ["시즌 사용량 비교", "시즌 누적 현황"].includes(title)
+              ? "report-title"
+              : undefined
+        }
+      >
+        {title}
+      </h2>
       {children}
     </section>
   );
@@ -326,7 +377,7 @@ function PhotoField({
     }
   }
   return (
-    <div className="photo-field">
+    <div className="photo-field" data-uploading={busy}>
       <Field label="사진 등록 (선택, 이미지 8MB 이하)">
         <input
           type="file"
@@ -400,6 +451,174 @@ export default function AdminConsole() {
   const [editingZone, setEditingZone] = useState<Zone | null>(null);
   const [criterionId, setCriterionId] = useState("");
   const persisted = useRef<string | null>(null);
+  const [welcome, setWelcome] = useState(false);
+  const [tourActive, setTourActive] = useState(false);
+  const [tourMenu, setTourMenu] = useState(-1);
+  const practice = useRef(false);
+  const previousSession = useRef<{
+    orgId: string;
+    view: number;
+    workId: string;
+    fieldStep: number;
+    settingGroup: number;
+    scroll: number;
+    editingZone: Zone | null;
+    criterionId: string;
+    summaryExpanded: boolean;
+    rawBefore: string | null;
+    forms: { value: string; checked: boolean }[][];
+  } | null>(null);
+  const tourSteps = useMemo(() => guideSteps(tourMenu), [tourMenu]);
+  function rememberGuide(status: string) {
+    try {
+      localStorage.setItem(GUIDE_KEY, JSON.stringify({ status, at: now() }));
+      return true;
+    } catch {
+      setMessage(
+        "안내 완료 여부를 저장하지 못했습니다. 브라우저 저장 권한을 확인하세요.",
+      );
+      return false;
+    }
+  }
+  function beginTour(menu = -1) {
+    if (document.querySelector('[data-uploading="true"]')) {
+      setMessage("사진 저장이 끝난 뒤 사용법 안내를 시작해 주세요.");
+      return;
+    }
+    try {
+      const training = createPracticeStore(menu);
+      saveStore(
+        { setItem: (_key, value) => localStorage.setItem(PRACTICE_KEY, value) },
+        training,
+      );
+      previousSession.current = {
+        orgId,
+        view,
+        workId,
+        fieldStep,
+        settingGroup,
+        scroll: window.scrollY,
+        editingZone,
+        criterionId,
+        summaryExpanded,
+        rawBefore: localStorage.getItem(STORAGE_KEY),
+        forms: Array.from(
+          document.querySelectorAll<HTMLFormElement>(".admin-console form"),
+        ).map((form) =>
+          Array.from(
+            form.querySelectorAll<HTMLElement>(
+              "input:not([type=file]),select,textarea",
+            ),
+          ).map((el) => ({
+            value: (el as HTMLInputElement).value,
+            checked: el instanceof HTMLInputElement ? el.checked : false,
+          })),
+        ),
+      };
+      persisted.current = JSON.stringify(training);
+      practice.current = true;
+      setData(training);
+      setOrgId(PRACTICE_ORG);
+      setWorkId("");
+      setFieldStep(0);
+      setSettingGroup(0);
+      setEditingZone(null);
+      setCriterionId("");
+      setMenuOpen(false);
+      setView(0);
+      setWelcome(false);
+      setTourMenu(menu);
+      setTourActive(true);
+      setMessage(
+        "사용법 연습 모드입니다. 실제 기관 데이터는 변경되지 않습니다.",
+      );
+    } catch (e) {
+      setWelcome(false);
+      setMessage(
+        `연습 모드를 시작하지 못했습니다: ${String(e)}. 기존 자료는 유지됩니다.`,
+      );
+    }
+  }
+  function endTour(completed = false) {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY),
+        restored = decodeStore(raw),
+        previous = previousSession.current;
+      persisted.current =
+        previous && previous.rawBefore !== raw ? previous.rawBefore : raw;
+      practice.current = false;
+      setData(restored);
+      setOrgId(
+        previous && restored.organizations.some((o) => o.id === previous.orgId)
+          ? previous.orgId
+          : restored.organizations[0]?.id || "",
+      );
+      setView(previous?.view || 0);
+      setWorkId(previous?.workId || "");
+      setFieldStep(previous?.fieldStep || 0);
+      setSettingGroup(previous?.settingGroup || 0);
+      setMenuOpen(false);
+      setTourActive(false);
+      setWelcome(false);
+      setEditingZone(previous?.editingZone || null);
+      setCriterionId(previous?.criterionId || "");
+      setSummaryExpanded(previous?.summaryExpanded || false);
+      const guideSaved = rememberGuide(completed ? "completed" : "dismissed");
+      setMessage(
+        previous && previous.rawBefore !== raw
+          ? "연습 중 다른 탭에서 기존 자료가 변경됐습니다. 원래 입력은 복원했지만 저장 전 새로고침하여 최신 자료를 확인하세요."
+          : completed
+            ? "사용법 안내를 완료했습니다. 원래 기관으로 돌아왔습니다."
+            : "안내를 종료하고 원래 기관으로 돌아왔습니다.",
+      );
+      if (!guideSaved)
+        setMessage(
+          "원래 화면으로 돌아왔지만 안내 완료 상태를 저장하지 못했습니다. 재방문 시 안내가 다시 나타날 수 있습니다.",
+        );
+      setTimeout(() => {
+        if (previous) {
+          Array.from(
+            document.querySelectorAll<HTMLFormElement>(".admin-console form"),
+          ).forEach((form, i) =>
+            Array.from(
+              form.querySelectorAll<HTMLElement>(
+                "input:not([type=file]),select,textarea",
+              ),
+            ).forEach((el, j) => {
+              const draft = previous.forms[i]?.[j];
+              if (draft) {
+                (el as HTMLInputElement).value = draft.value;
+                if (el instanceof HTMLInputElement) el.checked = draft.checked;
+              }
+            }),
+          );
+        }
+        document
+          .querySelector<HTMLButtonElement>('[data-guide="help"]')
+          ?.focus({ preventScroll: true });
+        window.scrollTo(0, previous?.scroll || 0);
+      }, 0);
+    } catch (e) {
+      practice.current = false;
+      setTourActive(false);
+      setWelcome(false);
+      setMenuOpen(false);
+      setLoaded(false);
+      setMessage(
+        `기존 자료 복원 확인 필요: ${String(e)}. 연습 자료와 기존 저장소는 분리되어 있습니다.`,
+      );
+    }
+  }
+  function prepareTour(step: GuideStep) {
+    if (step.navigation) {
+      setMenuOpen(window.innerWidth < 768);
+      return;
+    }
+    setMenuOpen(false);
+    setView(step.view);
+    if (step.phase !== undefined) setFieldStep(step.phase);
+    if (step.setting !== undefined) setSettingGroup(step.setting);
+  }
   useEffect(() => {
     const timer = setTimeout(() => {
       try {
@@ -418,6 +637,7 @@ export default function AdminConsole() {
           demoRequested ? DEMO_ORG_ID : (state.organizations[0]?.id ?? ""),
         );
         setLoaded(true);
+        setWelcome(!localStorage.getItem(GUIDE_KEY));
       } catch (e) {
         setMessage(String(e));
       }
@@ -426,7 +646,8 @@ export default function AdminConsole() {
   }, []);
   function change(next: Store, action: string, selectedOrg = orgId) {
     try {
-      if (localStorage.getItem(STORAGE_KEY) !== persisted.current)
+      const storageKey = practice.current ? PRACTICE_KEY : STORAGE_KEY;
+      if (localStorage.getItem(storageKey) !== persisted.current)
         throw new Error(
           "다른 탭에서 데이터가 변경됐습니다. 새로고침 후 다시 작업하세요. 현재 탭은 덮어쓰지 않습니다.",
         );
@@ -434,7 +655,9 @@ export default function AdminConsole() {
         ...next,
         audit: [...next.audit, { at: now(), orgId: selectedOrg, action }],
       };
-      saveStore(localStorage, saved);
+      if (practice.current)
+        localStorage.setItem(PRACTICE_KEY, JSON.stringify(saved));
+      else saveStore(localStorage, saved);
       persisted.current = JSON.stringify(saved);
       setData(saved);
       setMessage(`${action} · 이 브라우저에 저장됨`);
@@ -491,14 +714,19 @@ export default function AdminConsole() {
       orgId,
       zone: structuredClone(zone),
       product: p ? structuredClone(p) : null,
-      observation: blankObservation(),
+      observation: {
+        ...blankObservation(),
+        source: practice.current ? "데모" : "현장 측정",
+      },
       calculation: null,
       stage: "작성 중",
       applications: [],
       followup: null,
       operator: org?.administrator || "",
       note: "",
-      demo: reports.find((r) => r.id === reportId)?.demo ?? false,
+      demo:
+        practice.current ||
+        (reports.find((r) => r.id === reportId)?.demo ?? false),
       reportId,
       confirmedAt: null,
     };
@@ -618,6 +846,7 @@ export default function AdminConsole() {
             />
           )}
           <aside
+            inert={welcome ? true : undefined}
             ref={drawerRef}
             className={`sidebar ${menuOpen ? "drawer-open" : ""}`}
             aria-label="주 메뉴"
@@ -640,6 +869,7 @@ export default function AdminConsole() {
               {menus.map((m, i) => (
                 <button
                   key={m}
+                  data-guide={`nav-${i}`}
                   className={view === i ? "active" : ""}
                   onClick={() => {
                     setView(i);
@@ -662,7 +892,11 @@ export default function AdminConsole() {
               <p>필요한 제설을 유지하고 과다 사용을 줄입니다.</p>
             </div>
           </aside>
-          <main className="main" id="content">
+          <main
+            className="main"
+            id="content"
+            inert={welcome ? true : undefined}
+          >
             <header className="topbar">
               <div>
                 <button
@@ -717,7 +951,30 @@ export default function AdminConsole() {
                 </Field>
               </div>
             </header>
-            {loaded && (
+            <div className="walkthrough-help">
+              <button
+                data-guide="help"
+                disabled={!loaded || tourActive}
+                onClick={() => beginTour()}
+              >
+                사용법 안내
+              </button>
+              <button
+                disabled={!loaded || tourActive}
+                onClick={() => beginTour(view)}
+              >
+                이 기능 사용법 배우기
+              </button>
+            </div>
+            {tourActive && (
+              <div className="practice-banner">
+                <strong>
+                  사용법 연습 중 · 실제 기관 자료와 분리된 연습 저장소
+                </strong>
+                <button onClick={() => endTour()}>연습 종료·원래 화면</button>
+              </div>
+            )}
+            {loaded && !tourActive && (
               <div className="actions">
                 <button
                   onClick={() => {
@@ -819,6 +1076,7 @@ export default function AdminConsole() {
                     {settingsGroups.map((label, i) => (
                       <button
                         key={label}
+                        data-guide={i === 1 ? "settings-products" : undefined}
                         aria-pressed={settingGroup === i}
                         onClick={() => setSettingGroup(i)}
                       >
@@ -971,7 +1229,10 @@ export default function AdminConsole() {
                               <Field label="기본 제품">
                                 <select
                                   name="product"
-                                  defaultValue={editingZone?.productId || ""}
+                                  defaultValue={
+                                    editingZone?.productId ||
+                                    (tourActive ? products[0]?.id || "" : "")
+                                  }
                                 >
                                   <option value="">미설정</option>
                                   {products.map((p) => (
@@ -990,7 +1251,7 @@ export default function AdminConsole() {
                                 담당자 지정 중요 구역
                               </label>
                             </div>
-                            <button>구역 저장</button>
+                            <button data-guide="zone-save">구역 저장</button>
                             {editingZone && (
                               <button
                                 type="button"
@@ -1018,7 +1279,10 @@ export default function AdminConsole() {
                                 <button onClick={() => setEditingZone(z)}>
                                   수정
                                 </button>
-                                <button onClick={() => startWork(z.id)}>
+                                <button
+                                  data-guide="zone-start"
+                                  onClick={() => startWork(z.id)}
+                                >
                                   기록 시작
                                 </button>
                                 <button
@@ -1381,6 +1645,7 @@ export default function AdminConsole() {
                                   </Field>
                                   <div className="step-actions">
                                     <button
+                                      data-guide="observation-next"
                                       className="primary"
                                       onClick={() => goStep(1)}
                                     >
@@ -1419,6 +1684,7 @@ export default function AdminConsole() {
                                     </select>
                                   </Field>
                                   <button
+                                    data-guide="calculate"
                                     onClick={() => {
                                       const c =
                                         criteria.find(
@@ -1485,6 +1751,7 @@ export default function AdminConsole() {
                                     </p>
                                   )}
                                   <button
+                                    data-guide="confirm-field"
                                     className="primary"
                                     onClick={advanceWork}
                                     disabled={work.stage === "기록 완료"}
@@ -1580,7 +1847,10 @@ export default function AdminConsole() {
                                         label="작업·미살포·추가 처리 사유"
                                       />
                                     </div>
-                                    <button disabled={work.stage === "작성 중"}>
+                                    <button
+                                      data-guide="application-save"
+                                      disabled={work.stage === "작성 중"}
+                                    >
                                       실제 사용 기록 추가
                                     </button>
                                   </form>
@@ -1634,6 +1904,7 @@ export default function AdminConsole() {
                                       이전 단계
                                     </button>
                                     <button
+                                      data-guide="application-next"
                                       className="primary"
                                       onClick={advanceWork}
                                     >
@@ -1717,7 +1988,9 @@ export default function AdminConsole() {
                                         value={work.followup?.note}
                                       />
                                     </div>
-                                    <button>후속 관찰 저장</button>
+                                    <button data-guide="followup-save">
+                                      후속 관찰 저장
+                                    </button>
                                   </form>
                                   {work.followup && (
                                     <PhotoField
@@ -1744,6 +2017,7 @@ export default function AdminConsole() {
                                       이전 단계
                                     </button>
                                     <button
+                                      data-guide="followup-next"
                                       className="primary"
                                       disabled={work.stage === "기록 완료"}
                                       onClick={advanceWork}
@@ -2268,7 +2542,7 @@ export default function AdminConsole() {
                               <Text name="name" label="제품명" required />
                               <Text name="batch" label="제조 배치" required />
                             </div>
-                            <button>제품 등록</button>
+                            <button data-guide="product-save">제품 등록</button>
                           </form>
                           {products.map((p) => (
                             <p key={p.id}>
@@ -2916,6 +3190,25 @@ export default function AdminConsole() {
                   </>
                 )}
               </>
+            )}
+            {welcome && loaded && !tourActive && (
+              <WelcomeGuide
+                onStart={() => beginTour()}
+                onLater={() => {
+                  rememberGuide("dismissed");
+                  setWelcome(false);
+                }}
+              />
+            )}
+            {tourActive && (
+              <Walkthrough
+                steps={tourSteps}
+                snapshot={{ data, view, work, fieldStep, settingGroup }}
+                onPrepare={prepareTour}
+                onExit={() => endTour()}
+                onFinish={() => endTour(true)}
+                onComplete={() => rememberGuide("completed")}
+              />
             )}
             <footer>
               <strong>ECOSNOW</strong>
