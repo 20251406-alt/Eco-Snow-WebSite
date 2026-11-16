@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { focusControl, placeCoach } from "./walkthrough-layout";
 import type { GuideSnapshot, GuideStep } from "./walkthrough-model";
 export function WelcomeGuide({
   onStart,
@@ -124,6 +125,8 @@ export default function Walkthrough({
     if (done) return;
     let frame = 0,
       scrolled: HTMLElement | null = null;
+    let highlighted: HTMLElement | null = null;
+    const targetResize = new ResizeObserver(() => schedule());
     const measure = () => {
       const vv = window.visualViewport;
       const v = {
@@ -144,15 +147,46 @@ export default function Walkthrough({
         setBox(null);
         return;
       }
+      const control = focusControl(el, step.kind);
+      if (control !== highlighted) {
+        highlighted?.classList.remove("guide-focus-target");
+        highlighted = control;
+        control.classList.add("guide-focus-target");
+        targetResize.disconnect();
+        targetResize.observe(control);
+      }
       if (el !== scrolled) {
-        el.scrollIntoView({
+        control.scrollIntoView({
           block: "center",
           inline: "nearest",
           behavior: "instant",
         });
         scrolled = el;
       }
-      const r = el.getBoundingClientRect();
+      let r = control.getBoundingClientRect();
+      const padding = 18;
+      if (r.top < v.top + padding || r.bottom > v.top + v.height - padding) {
+        control.scrollIntoView({
+          block: "center",
+          inline: "nearest",
+          behavior: "instant",
+        });
+        r = control.getBoundingClientRect();
+      }
+      const layout = placeCoach(r, v, 300);
+      if (
+        (layout.side === "above" || layout.side === "below") &&
+        layout.maxHeight < 220 &&
+        v.height > r.height + 170
+      ) {
+        control.scrollIntoView({
+          block: "start",
+          inline: "nearest",
+          behavior: "instant",
+        });
+        r = control.getBoundingClientRect();
+      }
+
       if (
         r.width < 1 ||
         r.height < 1 ||
@@ -210,6 +244,8 @@ export default function Walkthrough({
       clearInterval(timer);
       cancelAnimationFrame(frame);
       observer.disconnect();
+      targetResize.disconnect();
+      highlighted?.classList.remove("guide-focus-target");
       window.removeEventListener("resize", resized);
       window.removeEventListener("scroll", schedule, true);
       visualViewport?.removeEventListener("resize", schedule);
@@ -218,17 +254,27 @@ export default function Walkthrough({
   }, [step, done]);
   useEffect(() => {
     if (!card.current) return;
-    const observer = new ResizeObserver(() =>
-      setCardHeight(card.current?.getBoundingClientRect().height || 285),
-    );
+    const update = () => {
+      const el = card.current;
+      if (!el) return;
+      const body = el.querySelector<HTMLElement>(".guide-coach-body");
+      setCardHeight(
+        el.scrollHeight +
+          (body ? Math.max(0, body.scrollHeight - body.clientHeight) : 0) +
+          2,
+      );
+    };
+    const observer = new ResizeObserver(update);
     observer.observe(card.current);
     return () => observer.disconnect();
-  }, [index, box, done]);
+  }, [index, box, done, hint]);
   useEffect(() => {
     if (done) return;
     const action = (e: Event) => {
       const el = target.current;
       if (!el || !(e.target instanceof Node) || !el.contains(e.target)) return;
+      if (e.type === "input" && step.kind === "input" && step.validate?.(el))
+        setHint("");
       if (step.kind === "click" && (e.type === "click" || e.type === "submit"))
         armed.current = true;
       if (step.kind === "change" && e.type === "change") armed.current = true;
@@ -237,10 +283,12 @@ export default function Walkthrough({
     document.addEventListener("click", action, true);
     document.addEventListener("submit", action, true);
     document.addEventListener("change", action, true);
+    document.addEventListener("input", action, true);
     return () => {
       document.removeEventListener("click", action, true);
       document.removeEventListener("submit", action, true);
       document.removeEventListener("change", action, true);
+      document.removeEventListener("input", action, true);
     };
   }, [step, done]);
   useEffect(() => {
@@ -348,23 +396,7 @@ export default function Walkthrough({
       </div>,
       document.body,
     );
-  const v = viewport;
-  const width = Math.max(240, Math.min(360, v.width - 24));
-  const below = box ? v.top + v.height - (box.top + box.height) - 16 : 0,
-    above = box ? box.top - v.top - 16 : 0;
-  const placeBelow = below >= Math.min(cardHeight, 290) || below >= above;
-  const available = box
-    ? Math.max(44, placeBelow ? below : above)
-    : Math.max(180, v.height - 32);
-  const height = Math.min(cardHeight, available);
-  const top = box
-    ? placeBelow
-      ? box.top + box.height + 10
-      : box.top - height - 10
-    : v.top + 24;
-  const left = box
-    ? Math.max(v.left + 12, Math.min(box.left, v.left + v.width - width - 12))
-    : v.left + (v.width - width) / 2;
+  const placement = placeCoach(box, { ...viewport }, cardHeight);
   return createPortal(
     <div className="walkthrough-layer" data-tour-step={step.id}>
       {box ? (
@@ -413,10 +445,10 @@ export default function Walkthrough({
         aria-labelledby="guide-step-title"
         style={{
           position: "fixed",
-          top: Math.max(v.top + 8, top),
-          left,
-          width,
-          maxHeight: available,
+          top: placement.top,
+          left: placement.left,
+          width: placement.width,
+          maxHeight: placement.maxHeight,
         }}
         tabIndex={-1}
       >
@@ -428,23 +460,25 @@ export default function Walkthrough({
             ×
           </button>
         </div>
-        <progress
-          max={steps.length}
-          value={index + 1}
-          aria-label="사용법 안내 진행률"
-        />
-        <h2 id="guide-step-title">{step.title}</h2>
-        <p>{step.description}</p>
-        <p className="guide-action-text">
-          {box
-            ? step.action
-            : "실제 화면 요소를 준비하고 있습니다. 잠시 후에도 나타나지 않으면 이전 단계로 돌아가거나 건너뛸 수 있습니다."}
-        </p>
-        {hint && (
-          <p className="guide-validation" role="alert">
-            {hint}
+        <div className="guide-coach-body">
+          <progress
+            max={steps.length}
+            value={index + 1}
+            aria-label="사용법 안내 진행률"
+          />
+          <h2 id="guide-step-title">{step.title}</h2>
+          <p>{step.description}</p>
+          <p className="guide-action-text">
+            {box
+              ? step.action
+              : "실제 화면 요소를 준비하고 있습니다. 잠시 후에도 나타나지 않으면 이전 단계로 돌아가거나 건너뛸 수 있습니다."}
           </p>
-        )}
+          {hint && (
+            <p className="guide-validation" role="alert">
+              {hint}
+            </p>
+          )}
+        </div>
         <div className="guide-actions">
           <button
             disabled={!index}

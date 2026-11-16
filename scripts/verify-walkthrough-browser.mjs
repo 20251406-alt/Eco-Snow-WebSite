@@ -90,7 +90,9 @@ async function run(width) {
         );
         const ring = document.querySelector("[data-guide-ring]");
         if (!el || !ring) return false;
-        const a = el.getBoundingClientRect(),
+        const control =
+          el.querySelector("input:not([type=checkbox]),select,textarea") || el;
+        const a = control.getBoundingClientRect(),
           b = ring.getBoundingClientRect();
         return (
           a.left >= b.left - 1 &&
