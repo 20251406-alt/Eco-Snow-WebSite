@@ -8,7 +8,7 @@ const b = await chromium.launch({
   headless: true,
   args: ["--no-sandbox"],
 });
-const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 } });
+const ctx = await b.newContext({ viewport: { width: 1440, height: 1000 }, reducedMotion: "reduce" });
 await ctx.addInitScript(() =>
   localStorage.setItem("ecosnow-onboarding-v1", '{"status":"dismissed"}'),
 );
@@ -93,6 +93,11 @@ try {
     .click();
   work = (await snapshot()).works.at(-1);
   assert.equal(work.stage, "기록 완료");
+  assert.equal(work.demoRewardShown, true);
+  const reward = p.getByRole("complementary", { name: "시연용 작업 완료 보상" });
+  await reward.waitFor();
+  assert.equal(await reward.locator("video").count(), 0);
+  await reward.getByRole("button", { name: "닫기", exact: true }).click();
   assert.equal(
     work.applications.reduce((n, a) => n + a.kg, 0),
     3.4,
@@ -107,6 +112,12 @@ try {
   await p
     .getByRole("heading", { name: "기록 완료부터 단계·혜택까지 체험" })
     .waitFor();
+  const growth = p.getByRole("region", { name: "시연용 기관 성장" });
+  await growth.getByRole("combobox").selectOption("1");
+  assert.match(await growth.innerText(), /새싹 발견/);
+  assert.match(await growth.innerText(), /2건을 더 기록/);
+  await growth.getByRole("combobox").selectOption("15");
+  assert.match(await growth.innerText(), /생태 수호/);
   const raw = await p.evaluate(() => localStorage.getItem("ecosnow-admin-v1"));
   for (const n of [1, 2, 3, 4]) {
     await p
@@ -137,6 +148,7 @@ try {
   await p.reload();
   await p.locator(".demo-workbench").waitFor();
   assert.equal((await snapshot()).works.at(-1).id, work.id);
+  assert.equal(await reward.count(), 0);
   console.log(
     "PASS depth/area forecasts, missing/out-of-range holds, saved prediction snapshot, actual/additional applications, followup completion, latest history, 1–4 reward simulations without record mutation, mobile and reload",
   );

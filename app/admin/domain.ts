@@ -91,6 +91,7 @@ export type Work = Stamp & {
   demo: boolean;
   reportId: string;
   confirmedAt: string | null;
+  demoRewardShown?: boolean;
 };
 export type Prior = Stamp & {
   demo?: boolean;

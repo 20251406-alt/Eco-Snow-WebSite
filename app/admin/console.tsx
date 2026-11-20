@@ -53,6 +53,7 @@ import { DEMO_ORG_ID, withDemo, demoComparisonData } from "./demo";
 import Pricing from "./pricing";
 import Dashboard from "./dashboard";
 import HomeVisuals from "./home-visuals";
+import EcoGrowth, { EcoReward, eligibleGrowthWork } from "./eco-growth";
 import WorkHistory from "./history";
 import Icon from "./ui-icon";
 import { getPlan, type TrialSubscription } from "./plans";
@@ -451,6 +452,7 @@ export default function AdminConsole() {
       previous?.focus();
     };
   }, [menuOpen]);
+  const [rewardOrg, setRewardOrg] = useState("");
   const [message, setMessage] = useState("");
   const [workId, setWorkId] = useState("");
   const [editingZone, setEditingZone] = useState<Zone | null>(null);
@@ -794,6 +796,8 @@ export default function AdminConsole() {
     if (!work) return;
     attempt(() => {
       const next = transition(work);
+      const showReward = orgId === DEMO_ORG_ID && !work.demoRewardShown && eligibleGrowthWork(next);
+      if (showReward) next.demoRewardShown = true;
       const reports = data.reports.map((r) =>
         r.id === work.reportId
           ? { ...r, status: "현장 확인" as const, updatedAt: now() }
@@ -808,8 +812,10 @@ export default function AdminConsole() {
           },
           `상태 전환: ${next.stage}`,
         )
-      )
+      ) {
         setFieldStep(next.stage === "현장 확인" ? 2 : 3);
+        if (showReward) setRewardOrg(orgId);
+      }
     });
   }
   function goStep(step: number) {
@@ -1171,6 +1177,9 @@ export default function AdminConsole() {
                         orgId={orgId}
                         onNavigate={setView}
                       />
+                    )}
+                    {view === 0 && orgId === DEMO_ORG_ID && (
+                      <EcoGrowth works={data.works} orgId={orgId} orgName={org.name} onOpen={() => setView(5)} />
                     )}
                     {view === 0 && orgId === DEMO_ORG_ID && (
                       <DemoWorkbench
@@ -2465,6 +2474,9 @@ export default function AdminConsole() {
                       </>
                     )}
                     {view === 5 && orgId === DEMO_ORG_ID && (
+                      <EcoGrowth works={data.works} orgId={orgId} orgName={org.name} />
+                    )}
+                    {view === 5 && orgId === DEMO_ORG_ID && (
                       <DemoSeason data={data} onReport={() => setView(4)} />
                     )}
                     {view === 5 && orgId !== DEMO_ORG_ID && (
@@ -3316,6 +3328,9 @@ export default function AdminConsole() {
                 onFinish={() => endTour(true)}
                 onComplete={() => rememberGuide("completed")}
               />
+            )}
+            {rewardOrg && rewardOrg === orgId && view === 2 && !tourActive && (
+              <EcoReward onClose={() => setRewardOrg("")} />
             )}
             <footer>
               <strong>ECOSNOW</strong>

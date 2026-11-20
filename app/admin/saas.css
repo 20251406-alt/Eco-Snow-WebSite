@@ -33,3 +33,17 @@ body{font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothi
 @media(max-width:767px){.visual-heading h2{font-size:23px}.visual-kpis{gap:12px}.visual-kpis article{padding:16px}.visual-kpis strong{font-size:25px}.visual-kpis article>span{font-size:12px}.home-chart-grid,.home-bottom-grid{gap:0}.chart-legend{font-size:11px;gap:8px}.home-visuals .section-heading{gap:8px}.completion-panel .donut-wrap{grid-template-columns:1fr;gap:0}.trend-panel svg text{font-size:13px}.admin-console .zone-bar{grid-template-columns:minmax(0,1fr) 60px 72px;gap:8px;font-size:12px!important}.yearly-numbers strong{font-size:20px}.visual-heading button{align-self:stretch}.home-visuals .chart-source .table-wrap table{min-width:0}}
 
 @media(max-width:767px){.trend-panel svg text{font-size:24px}}
+
+.eco-growth progress { width: min(100%, 26rem); accent-color: #087f73; }
+.eco-growth-scene { display: grid; gap: 10px; max-width: 800px; margin-block: 16px; }
+.eco-growth-scene img, .eco-reward img, .eco-reward video { width: 100%; height: auto; display: block; border-radius: 12px; }
+.eco-growth-scene span { font-size: .875rem; }
+.eco-growth details { margin-top: 16px; }
+.eco-reward { position: fixed; z-index: 55; inset: auto 16px 16px auto; width: min(420px, calc(100vw - 32px)); max-height: 70dvh; overflow: auto; display: grid; gap: 12px; padding: 16px; border: 1px solid #b7d9ce; border-radius: 16px; background: #fff; color: #143234; box-shadow: 0 8px 30px #17303530; }
+.eco-growth-mascot { float: right; width: 72px; height: 78px; background: url('/eco-growth/forest.webp') 64% 63% / 310px auto no-repeat; border-radius: 12px; }
+.eco-forest-stage { display: flex; align-items: end; justify-content: center; gap: clamp(6px, 3vw, 22px); min-height: 78px; padding: 6px; background: #e9f4df; border-bottom: 5px solid #93ad76; border-radius: 8px; }
+.eco-forest-stage i { display: block; position: relative; width: 46px; height: 64px; background: linear-gradient(#72512f,#72512f) center bottom / 8px 24px no-repeat; }
+.eco-forest-stage i:before { content: ''; position: absolute; inset: 3px 0 19px; background: #38813b; clip-path: polygon(28% 0,72% 0,72% 12%,87% 12%,87% 26%,100% 26%,100% 73%,85% 73%,85% 88%,65% 88%,65% 100%,35% 100%,35% 88%,15% 88%,15% 73%,0 73%,0 26%,13% 26%,13% 12%,28% 12%); }
+.eco-forest-stage[data-level="1"] i { transform: scale(.43); transform-origin: bottom; }
+.eco-forest-stage[data-level="2"] i { transform: scale(.7); transform-origin: bottom; }
+.eco-forest-stage[data-level="5"] i:nth-child(odd) { transform: scale(.8); transform-origin: bottom; }
