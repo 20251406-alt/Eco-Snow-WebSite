@@ -942,7 +942,7 @@ export default function AdminConsole() {
               ))}
             </nav>
             <div className="portal-sidebar-links">
-              <a href="https://eco-snow-report-platform.vercel.app/user" target="_blank" rel="noopener noreferrer">
+              <a href="https://eco-snow-report-platform.vercel.app/" target="_blank" rel="noopener noreferrer">
                 운전자 제보 앱 ↗
               </a>
             </div>

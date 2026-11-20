@@ -21,7 +21,7 @@ try {
     localStorage.setItem("ecosnow-onboarding-v1", '{"status":"dismissed"}'),
   );
   await citizen.goto(driver);
-  assert.equal(new URL(citizen.url()).pathname, "/user");
+  assert.equal(new URL(citizen.url()).pathname, "/");
   await citizen.getByRole("checkbox").check();
   await citizen.getByRole("button", { name: "익명으로 시작하기" }).click();
   await citizen.getByRole("navigation", { name: "사용자 메뉴" }).waitFor();
