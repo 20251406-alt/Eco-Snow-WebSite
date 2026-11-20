@@ -38,7 +38,7 @@ const section = (title) =>
     .filter({ has: p.getByRole("heading", { name: title, exact: true }) });
 try {
   await p.goto(url + "?demo=1");
-  await p.getByRole("button", { name: "데모 데이터로 둘러보기" }).waitFor();
+  await p.getByRole("button", { name: "시연 시작" }).waitFor();
   const before = await state();
   await p.evaluate(async () => {
     localStorage.setItem("ecosnow-cameras", "legacy-camera-record-preserved");
@@ -84,7 +84,7 @@ try {
     "school",
   );
   await p.reload();
-  await p.getByRole("button", { name: "데모 데이터로 둘러보기" }).waitFor();
+  await p.getByRole("button", { name: "시연 시작" }).waitFor();
   assert.match(await p.locator(".plan-pill").innerText(), /학교/);
   assert.equal(
     await p.evaluate(() => localStorage.getItem("ecosnow-cameras")),
@@ -144,7 +144,7 @@ try {
   await section("기관·관리자 등록")
     .getByRole("button", { name: "기관 등록", exact: true })
     .click();
-  const otherId = await p.getByLabel("현재 기관 (로컬 구분)").inputValue();
+  const otherId = await p.getByLabel("현재 기관").inputValue();
   await nav("요금제·구독");
   assert.match(
     await p.locator(".plan-current").innerText(),
@@ -169,7 +169,7 @@ try {
     .click();
   assert.equal((await state()).subscriptions[otherId].planId, "private");
   await p
-    .getByLabel("현재 기관 (로컬 구분)")
+    .getByLabel("현재 기관")
     .selectOption("ecosnow-demo-organization-v1");
   assert.match(
     await p.locator(".plan-current").innerText(),

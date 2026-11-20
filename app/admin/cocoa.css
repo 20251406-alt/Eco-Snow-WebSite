@@ -1,0 +1,57 @@
+/* Shared palette with the EcoSnow report workspace. */
+:root {
+  --paper: #fbf2ec;
+  --card: #fffdfb;
+  --soft: #fdf5f0;
+  --ink: #4a3631;
+  --muted: #6a524b;
+  --navy: #4a3631;
+  --line: #f0e0d6;
+  --brand: #457d5d;
+  --brand-soft: #e3f1e6;
+  --blue: #457d5d;
+  --ice: #457d5d;
+  --radius: 18px;
+  --shadow: 0 3px 14px #684b3610;
+}
+
+.admin-console { background: var(--paper); color: var(--ink); }
+.admin-console .sidebar { background: #fff8f3; }
+.admin-console .sidebar nav { gap: 5px; padding-top: 18px; }
+.admin-console .sidebar nav button { color: var(--muted); min-height: 43px; padding-block: 9px; }
+.admin-console .sidebar nav button.active,
+.admin-console .sidebar nav button.active:hover { color: #315943; background: var(--brand-soft); }
+.admin-console .sidebar nav button:hover { color: var(--ink); background: #f8eae1; }
+.admin-console .brand { padding-bottom: 19px; }
+.portal-sidebar-links { margin-top: auto; padding: 18px 14px 3px; }
+.portal-sidebar-links a, .admin-console .report-workspace .section-heading a { color: #315943; font-size: 14px; font-weight: 650; }
+.portal-kicker { font-size: 11px; font-weight: 750; letter-spacing: .1em; color: #315943; margin-bottom: 8px; }
+.admin-console .topbar { padding-bottom: 14px; }
+.admin-console .panel,
+.admin-console .task-row,
+.admin-console .kpi-card,
+.admin-console .visual-kpis article,
+.admin-console .eco-reward { background: var(--card); color: var(--ink); border-color: var(--line); }
+.admin-console .visual-kpis article:first-child { background: var(--brand); color: white; border-color: var(--brand); }
+.admin-console .visual-kpis article:first-child small,
+.admin-console .visual-kpis article:first-child > span { color: #f0f7ef; }
+.admin-console .section-kicker, .admin-console .yearly-change { color: #315943; }
+.admin-console button:not(nav button),
+.admin-console input:not([type="checkbox"]):not([type="radio"]),
+.admin-console select, .admin-console textarea { background-color: var(--card); color: var(--ink); border-color: #e6d3c7; }
+.admin-console button:not(nav button):hover:not(:disabled) { background: #f7efe9; border-color: #c4a798; }
+.admin-console button.primary:not(nav button) { color: #fff; background: var(--brand); border-color: var(--brand); }
+.admin-console button.primary:not(nav button):hover:not(:disabled) { color: #fff; background: #356448; border-color: #356448; }
+.admin-console button.plan-pill:not(nav button) { background: var(--brand-soft); color: #315943; border-color: #c8dfcd; }
+.admin-console button.danger-button:not(nav button) { color: #963e30; }
+.admin-console .storage-strip { margin-block: 6px; }
+.admin-console .admin-notice:empty { display: none; }
+.admin-console .chart-selection, .admin-console .empty-state,
+.admin-console .work-summary, .admin-console .demo-prediction-result { background: var(--soft); color: var(--ink); border-color: var(--line); }
+.admin-console .home-visuals .visual-heading { padding: 15px 20px; border: 1px solid #d5e3d4; border-radius: var(--radius); background: #e9eee2; }
+.admin-console .chart-legend, .admin-console .completion-panel > p { color: var(--muted); }
+.admin-console .legend-actual, .admin-console .zone-bar-track i { background: var(--brand); }
+.admin-console .usage-chart polyline:not([stroke-dasharray]) { stroke: var(--brand); }
+.admin-console .usage-chart circle[fill="#087f73"] { fill: var(--brand); }
+.admin-console th { background: var(--soft); color: var(--muted); }
+.admin-console .report-workspace iframe { border-color: var(--line); }

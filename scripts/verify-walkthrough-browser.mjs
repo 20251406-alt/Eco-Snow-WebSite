@@ -168,7 +168,7 @@ async function run(width) {
       raw,
     );
     assert.equal(
-      await page.getByLabel("현재 기관 (로컬 구분)").inputValue(),
+      await page.getByLabel("현재 기관").inputValue(),
       "ecosnow-demo-organization-v1",
     );
     // Exit, back, restart, and skipping never mutate real records.

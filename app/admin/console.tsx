@@ -632,8 +632,9 @@ export default function AdminConsole() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
         let state = decodeStore(raw);
-        const demoRequested =
-          new URLSearchParams(window.location.search).get("demo") === "1";
+        const params = new URLSearchParams(window.location.search);
+        const demoRequested = params.get("demo") === "1";
+        const reportsRequested = params.get("tab") === "reports";
         if (demoRequested) {
           const seeded = withDemo(state);
           if (seeded !== state) saveStore(localStorage, seeded);
@@ -645,7 +646,8 @@ export default function AdminConsole() {
           demoRequested ? DEMO_ORG_ID : (state.organizations[0]?.id ?? ""),
         );
         setLoaded(true);
-        setWelcome(!localStorage.getItem(GUIDE_KEY));
+        if (reportsRequested) setView(8);
+        setWelcome(!reportsRequested && !localStorage.getItem(GUIDE_KEY));
       } catch (e) {
         setMessage(String(e));
       }
@@ -668,7 +670,7 @@ export default function AdminConsole() {
       else saveStore(localStorage, saved);
       persisted.current = JSON.stringify(saved);
       setData(saved);
-      setMessage(`${action} · 이 브라우저에 저장됨`);
+      setMessage(`${action} · 로컬 저장됨`);
       return true;
     } catch (e) {
       setMessage(`저장 실패: ${String(e)}. 기존 저장 데이터는 유지됩니다.`);
@@ -877,7 +879,7 @@ export default function AdminConsole() {
   return (
     <ValidationContext.Provider value={message}>
       <SettingsContext.Provider value={view === 7 ? settingGroup : null}>
-        <div className="app-shell admin-console">
+        <div className="app-shell admin-console" data-skin="d">
           <a className="skip-link" href="#content">
             본문으로 건너뛰기
           </a>
@@ -905,13 +907,13 @@ export default function AdminConsole() {
               </span>
               <span>
                 <strong>ECOSNOW</strong>
-                <small>Snow Signal</small>
+                <small>기관용 워크스페이스</small>
               </span>
             </a>
             <nav aria-label="관리자 메뉴">
-              {menus.map((m, i) => (
+              {[0, 8, 1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <button
-                  key={m}
+                  key={i}
                   data-guide={`nav-${i}`}
                   className={view === i ? "active" : ""}
                   onClick={() => {
@@ -921,18 +923,14 @@ export default function AdminConsole() {
                   aria-current={view === i ? "page" : undefined}
                 >
                   <Icon index={i === 8 ? 3 : i} />
-                  <span>{m}</span>
+                  <span>{menus[i]}</span>
                 </button>
               ))}
             </nav>
-            <div className="side-note">
-              <span>기록에서 적정 살포까지</span>
-              <strong>
-                기록에서 시작하는
-                <br />
-                적정 살포
-              </strong>
-              <p>필요한 제설을 유지하고 과다 사용을 줄입니다.</p>
+            <div className="portal-sidebar-links">
+              <a href="https://eco-snow-report-platform.vercel.app/user" target="_blank" rel="noopener noreferrer">
+                운전자 제보 앱 ↗
+              </a>
             </div>
           </aside>
           <main
@@ -950,22 +948,8 @@ export default function AdminConsole() {
                 >
                   <Icon index={3} /> 메뉴
                 </button>
+                <div className="portal-kicker">ECO-SNOW · 기관용</div>
                 <h1>{menus[view]}</h1>
-                <p className="page-description">
-                  {
-                    [
-                      "현장 업무와 다음 행동을 한눈에 확인하세요.",
-                      "기관의 관리 범위와 현장 특성을 정리하세요.",
-                      "관찰부터 후속 확인까지, 근거를 남기며 진행하세요.",
-                      "안내량과 실제 사용량을 구분해 살펴보세요.",
-                      "동일 기간의 실제 소비 자료를 비교하세요.",
-                      "기관의 기록 완성도와 평가 상태를 확인하세요.",
-                      "기관 규모에 맞는 체험 플랜을 선택하세요.",
-                      "기관 정보와 제품·적용 기준을 관리하세요.",
-                      "공주시 제보 지도와 통계를 보고 제보를 검토하세요.",
-                    ][view]
-                  }
-                </p>
               </div>
               <div className="header-controls">
                 <button className="plan-pill" onClick={() => setView(6)}>
@@ -973,7 +957,7 @@ export default function AdminConsole() {
                     "플랜 미선택"}{" "}
                   · 체험
                 </button>
-                <Field label="현재 기관 (로컬 구분)">
+                <Field label="현재 기관">
                   <select
                     value={orgId}
                     onChange={(e) => {
@@ -1037,13 +1021,13 @@ export default function AdminConsole() {
                     }
                   }}
                 >
-                  데모 데이터로 둘러보기
+                  시연 시작
                 </button>
               </div>
             )}
             <div className="storage-strip">
               <span className="storage-indicator" />
-              로컬 저장 · 이 브라우저에서만 사용
+              로컬 저장
               <details>
                 <summary>저장 방식 안내</summary>
                 <p>
@@ -1063,13 +1047,13 @@ export default function AdminConsole() {
             >
               {message ||
                 (loaded
-                  ? "저장 준비 완료 · 실제 AI·티맵 연동 없음"
+                  ? ""
                   : "기존 저장 자료를 확인하는 중입니다.")}
             </div>
             {loaded && orgId === DEMO_ORG_ID && (
               <details className="demo-disclosure">
                 <summary>
-                  데모 체험 · 실제 운영 자료 아님 · 예시 작업 열기
+                  예시 작업 열기 · 시연용
                 </summary>
                 <Panel title="데모 체험 · 실제 운영 자료 아님">
                   <p>
@@ -1117,7 +1101,7 @@ export default function AdminConsole() {
                     <div className="section-heading">
                       <div>
                         <h2>공주시 제보 지도 및 검증</h2>
-                        <p>지도와 통계로 시연 제보를 확인하고 판정할 수 있습니다. 기존 제보 관리자 계정으로 로그인하세요.</p>
+                        <p>제보 관리자 계정으로 로그인하세요.</p>
                       </div>
                       <a href="https://eco-snow-report-platform.vercel.app/admin" target="_blank" rel="noopener noreferrer">
                         새 창에서 제보 관리 열기 ↗

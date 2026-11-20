@@ -59,8 +59,8 @@ export default function HomeVisuals({
               ? "시연 데이터 · 실제 기관 성과 아님"
               : "현재 기관의 저장된 기록"}
           </span>
-          <h2>필요한 살포량부터 작업 현황까지, 한눈에</h2>
-          <p>현재 조건의 예상량과 실제 소비 기록을 구분해 확인하세요.</p>
+          <h2>제설 작업 현황</h2>
+
         </div>
         <button
           className="primary"
