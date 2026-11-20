@@ -31,8 +31,8 @@ test("renders development preview metadata", async () => {
   );
   const html = await response.text();
   assert.match(html, developmentPreviewMeta);
-  assert.match(html, /현장 확인·정량 살포/);
-  assert.match(html, /관리 구역/);
+  assert.match(html, /제설 관리/);
+  assert.match(html, /제보 지도/);
   assert.match(html, /로컬 저장/);
   assert.doesNotMatch(html, /종합 결빙 위험도|예방 살포 권장|기상 조건 입력/);
 });

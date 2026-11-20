@@ -21,13 +21,14 @@ const nav = async (name) => {
   if (await p.getByRole("button", { name: "메뉴", exact: true }).isVisible())
     await p.getByRole("button", { name: "메뉴", exact: true }).click();
   await p
-    .getByRole("navigation")
+    .getByRole("navigation", {name: "관리자 메뉴"})
     .getByRole("button", { name, exact: true })
     .click();
 };
 try {
   await mkdir("outputs/demo-prediction", { recursive: true });
   await p.goto(url + "?demo=1");
+  await nav("제설 관리");
   const bench = p.locator(".demo-workbench");
   await bench
     .getByRole("heading", {
@@ -108,7 +109,8 @@ try {
     await p.locator(".desktop-history tbody tr").first().innerText(),
     /3.4 kg/,
   );
-  await nav("기관 성장·보상");
+  await nav("절약 리포트");
+  await p.getByRole("navigation", {name: "절약 리포트 기능"}).getByRole("button", {name: "기관 성장·보상"}).click();
   await p
     .getByRole("heading", { name: "기록 완료부터 단계·혜택까지 체험" })
     .waitFor();
@@ -136,7 +138,7 @@ try {
     await p.evaluate(() => localStorage.getItem("ecosnow-admin-v1")),
     raw,
   );
-  await nav("홈 대시보드");
+  await nav("홈");
   await p.setViewportSize({ width: 390, height: 900 });
   assert.ok(
     await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth),
@@ -146,7 +148,7 @@ try {
     fullPage: false,
   });
   await p.reload();
-  await p.locator(".demo-workbench").waitFor();
+  await p.locator(".native-kpis").waitFor();
   assert.equal((await snapshot()).works.at(-1).id, work.id);
   assert.equal(await reward.count(), 0);
   console.log(

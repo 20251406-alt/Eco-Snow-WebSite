@@ -47,7 +47,3 @@ body{font-family:"Pretendard","Noto Sans KR","Apple SD Gothic Neo","Malgun Gothi
 .eco-forest-stage[data-level="1"] i { transform: scale(.43); transform-origin: bottom; }
 .eco-forest-stage[data-level="2"] i { transform: scale(.7); transform-origin: bottom; }
 .eco-forest-stage[data-level="5"] i:nth-child(odd) { transform: scale(.8); transform-origin: bottom; }
-
-.report-workspace { min-width: 0; }
-.report-workspace .section-heading a { color: #07665c; font-weight: 650; }
-.report-workspace iframe { display: block; width: 100%; min-height: 720px; height: 85dvh; border: 1px solid #e8d9ce; border-radius: 14px; background: #fbf2ec; }

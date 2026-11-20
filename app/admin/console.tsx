@@ -52,8 +52,9 @@ import { DEMO_ORG_ID, withDemo, demoComparisonData } from "./demo";
 
 import Pricing from "./pricing";
 import Dashboard from "./dashboard";
-import HomeVisuals from "./home-visuals";
+import { homeMetrics } from "./home-metrics";
 import ReportWorkspace from "./report-workspace";
+import SeasonComparison from "./season-comparison";
 import EcoGrowth, { EcoReward, eligibleGrowthWork } from "./eco-growth";
 import WorkHistory from "./history";
 import Icon from "./ui-icon";
@@ -116,6 +117,14 @@ const menus = [
   "요금제·구독",
   "기관 설정",
   "제보 관리",
+];
+const primaryGroups = [
+  { id: 0, label: "홈", views: [0] },
+  { id: 8, label: "제보 지도", views: [8] },
+  { id: 2, label: "제설 관리", views: [1, 2] },
+  { id: 3, label: "작업 이력", views: [3] },
+  { id: 4, label: "절약 리포트", views: [4, 5] },
+  { id: 7, label: "설정", views: [6, 7] },
 ];
 const fmt = (n: number | null, unit = "") =>
   n === null
@@ -454,6 +463,7 @@ export default function AdminConsole() {
       previous?.focus();
     };
   }, [menuOpen]);
+  const [reportReference, setReportReference] = useState("");
   const [rewardOrg, setRewardOrg] = useState("");
   const [message, setMessage] = useState("");
   const [workId, setWorkId] = useState("");
@@ -687,8 +697,11 @@ export default function AdminConsole() {
   const work = works.find((w) => w.id === workId);
   const settings = data.settings[orgId] || defaultSettings();
   const reportData =
-    view === 4 && orgId === DEMO_ORG_ID ? demoComparisonData(data) : data;
+    orgId === DEMO_ORG_ID ? demoComparisonData(data) : data;
   const report = compare(reportData, orgId);
+  const metrics = homeMetrics(data, orgId, orgId === DEMO_ORG_ID);
+  const monthlyMax = Math.max(1, ...metrics.months.map(m => m.actual ?? 0));
+  const activeGroup = primaryGroups.find(group => group.views.includes(view));
   const completedSteps = work
     ? [
         observationIssues(work.observation).length === 0,
@@ -912,19 +925,19 @@ export default function AdminConsole() {
               </span>
             </a>
             <nav aria-label="관리자 메뉴">
-              {[0, 8, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+              {(tourActive ? menus.map((label, id) => ({ id, label, views: [id] })) : primaryGroups).map(({ id: i, label, views }) => (
                 <button
                   key={i}
                   data-guide={`nav-${i}`}
-                  className={view === i ? "active" : ""}
+                  className={views.includes(view) ? "active" : ""}
                   onClick={() => {
                     setView(i);
                     setMenuOpen(false);
                   }}
-                  aria-current={view === i ? "page" : undefined}
+                  aria-current={views.includes(view) ? "page" : undefined}
                 >
                   <Icon index={i === 8 ? 3 : i} />
-                  <span>{menus[i]}</span>
+                  <span>{label}</span>
                 </button>
               ))}
             </nav>
@@ -950,7 +963,7 @@ export default function AdminConsole() {
                   <Icon index={3} /> 메뉴
                 </button>
                 <div className="portal-kicker">ECO-SNOW · 기관용</div>
-                <h1>{menus[view]}</h1>
+                <h1>{activeGroup?.label ?? menus[view]}</h1>
               </div>
               <div className="header-controls">
                 <button className="plan-pill" onClick={() => setView(6)}>
@@ -1051,7 +1064,7 @@ export default function AdminConsole() {
                   ? ""
                   : "기존 저장 자료를 확인하는 중입니다.")}
             </div>
-            {loaded && orgId === DEMO_ORG_ID && (
+            {loaded && orgId === DEMO_ORG_ID && view === 2 && (
               <details className="demo-disclosure">
                 <summary>
                   예시 작업 열기 · 시연용
@@ -1097,7 +1110,32 @@ export default function AdminConsole() {
               </p>
             ) : (
               <>
-                {view === 8 && <ReportWorkspace />}
+                {activeGroup && activeGroup.views.length > 1 && !tourActive && (
+                  <nav className="portal-subnav" aria-label={activeGroup.label + " 기능"}>
+                    {activeGroup.views.map(id => <button key={id} onClick={() => setView(id)} aria-current={view === id ? "page" : undefined}>{menus[id]}</button>)}
+                  </nav>
+                )}
+                {(view === 0 || view === 8) && <ReportWorkspace
+                  home={view === 0} season={fmt(metrics.actual, " kg")} savings={fmt(report.savings === null ? null : Math.round(report.savings * 10) / 10, " %")}
+                  onMap={() => setView(8)} onWork={(summary) => { setReportReference(summary); setView(2); }}
+                />}
+                {view === 0 && (
+                  <div className="portal-bottom">
+                    <section className="panel">
+                      <h2>월별 실제 사용량</h2>
+                      {metrics.months.some(m => m.actual !== null) ? (
+                        <div className="portal-usage" aria-label="월별 실제 제설제 사용량">
+                          {metrics.months.map(m => <div key={m.month}>
+                            <span>{m.month}</span><i style={{ width: ((m.actual ?? 0) / monthlyMax * 100) + "%" }} />
+                            <strong>{fmt(m.actual, " kg")}</strong>
+                          </div>)}
+                        </div>
+                      ) : <p>사용 기록이 없습니다.</p>}
+                      <button onClick={() => setView(4)}>절약 리포트 보기</button>
+                    </section>
+                    {org && orgId === DEMO_ORG_ID && <EcoGrowth works={data.works} orgId={orgId} orgName={org.name} onOpen={() => setView(5)} />}
+                  </div>
+                )}
                 {view === 7 && (
                   <div
                     className="settings-nav"
@@ -1160,32 +1198,19 @@ export default function AdminConsole() {
                 )}
                 {org && (
                   <>
-                    {view === 0 && (
-                      <HomeVisuals
-                        data={data}
-                        orgId={orgId}
-                        onNavigate={setView}
-                      />
+                    {view === 2 && reportReference && (
+                      <div className="native-report-status">
+                        <strong>현장 확인 참고 제보</strong> · {reportReference}
+                        <p>살포량은 현장 관찰과 등록된 적용 기준으로 산정합니다.</p>
+                        <button onClick={() => setReportReference("")}>참고 닫기</button>
+                      </div>
                     )}
-                    {view === 0 && orgId === DEMO_ORG_ID && (
-                      <EcoGrowth works={data.works} orgId={orgId} orgName={org.name} onOpen={() => setView(5)} />
+                    {view === 2 && orgId === DEMO_ORG_ID && !work && (
+                      <DemoWorkbench data={data} onStart={startDemoPrediction} onNavigate={setView} />
                     )}
-                    {view === 0 && orgId === DEMO_ORG_ID && (
-                      <DemoWorkbench
-                        data={data}
-                        onStart={startDemoPrediction}
-                        onNavigate={setView}
-                      />
-                    )}
-                    {view === 0 && (
-                      <Dashboard
-                        compact
-                        data={data}
-                        orgId={orgId}
-                        onOpen={openWork}
-                        onNavigate={setView}
-                      />
-                    )}
+                    {view === 3 && <details><summary>미완료 작업과 구독 현황</summary>
+                      <Dashboard compact data={data} orgId={orgId} onOpen={openWork} onNavigate={setView} />
+                    </details>}
                     {view === 1 && (
                       <>
                         <Panel
@@ -2331,32 +2356,9 @@ export default function AdminConsole() {
                             {settings.season.priorStart || "미설정"} ~{" "}
                             {settings.season.priorEnd || "미설정"}
                           </p>
-                          <div className="metrics">
-                            <article>
-                              <div>
-                                <small>전년도 실제 사용량</small>
-                                <strong>{fmt(report.previous, " kg")}</strong>
-                              </div>
-                            </article>
-                            <article>
-                              <div>
-                                <small>올해 실제 사용량</small>
-                                <strong>{fmt(report.current.kg, " kg")}</strong>
-                              </div>
-                            </article>
-                            <article>
-                              <div>
-                                <small>사용량 증감 (올해−전년)</small>
-                                <strong>{fmt(report.delta, " kg")}</strong>
-                              </div>
-                            </article>
-                            <article>
-                              <div>
-                                <small>절감률 (증가 시 음수)</small>
-                                <strong>{fmt(report.savings, " %")}</strong>
-                              </div>
-                            </article>
-                          </div>
+                          <SeasonComparison previous={report.previous} current={report.current.kg} saving={report.savings}
+                            cost={report.priorCost !== null && report.current.cost !== null ? report.priorCost - report.current.cost : null} />
+                          <p>사용량 증감 {fmt(report.delta, " kg")} · 기관 평가 {report.stage === null ? "보류" : report.stage + "단계"}</p>
                           <p>
                             전년도 비용 {fmt(report.priorCost, " 원")} · 올해
                             실제 사용 비용 {fmt(report.current.cost, " 원")} ·
