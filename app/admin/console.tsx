@@ -114,6 +114,7 @@ const menus = [
   "기관 성장·보상",
   "요금제·구독",
   "기관 설정",
+  "제보 관리",
 ];
 const fmt = (n: number | null, unit = "") =>
   n === null
@@ -919,7 +920,7 @@ export default function AdminConsole() {
                   }}
                   aria-current={view === i ? "page" : undefined}
                 >
-                  <Icon index={i} />
+                  <Icon index={i === 8 ? 3 : i} />
                   <span>{m}</span>
                 </button>
               ))}
@@ -961,6 +962,7 @@ export default function AdminConsole() {
                       "기관의 기록 완성도와 평가 상태를 확인하세요.",
                       "기관 규모에 맞는 체험 플랜을 선택하세요.",
                       "기관 정보와 제품·적용 기준을 관리하세요.",
+                      "공주시 제보 지도와 통계를 보고 제보를 검토하세요.",
                     ][view]
                   }
                 </p>
@@ -1004,6 +1006,7 @@ export default function AdminConsole() {
               <button
                 disabled={!loaded || tourActive}
                 onClick={() => beginTour(view)}
+                hidden={view === 8}
               >
                 이 기능 사용법 배우기
               </button>
@@ -1109,6 +1112,24 @@ export default function AdminConsole() {
               </p>
             ) : (
               <>
+                {view === 8 && (
+                  <section className="panel report-workspace" aria-label="제보 관리 대시보드">
+                    <div className="section-heading">
+                      <div>
+                        <h2>공주시 제보 지도 및 검증</h2>
+                        <p>지도와 통계로 시연 제보를 확인하고 판정할 수 있습니다. 기존 제보 관리자 계정으로 로그인하세요.</p>
+                      </div>
+                      <a href="https://eco-snow-report-platform.vercel.app/admin" target="_blank" rel="noopener noreferrer">
+                        새 창에서 제보 관리 열기 ↗
+                      </a>
+                    </div>
+                    <iframe
+                      src="https://eco-snow-report-platform.vercel.app/admin"
+                      title="제보 지도·분석·검증 대시보드"
+                      referrerPolicy="strict-origin-when-cross-origin"
+                    />
+                  </section>
+                )}
                 {view === 7 && (
                   <div
                     className="settings-nav"
@@ -1127,7 +1148,7 @@ export default function AdminConsole() {
                     ))}
                   </div>
                 )}
-                {(!org || view === 7) && (
+                {((!org && view !== 8) || view === 7) && (
                   <Panel title="기관·관리자 등록">
                     <form
                       onSubmit={(e) =>
