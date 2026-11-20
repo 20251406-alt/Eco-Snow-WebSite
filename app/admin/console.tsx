@@ -53,6 +53,7 @@ import { DEMO_ORG_ID, withDemo, demoComparisonData } from "./demo";
 import Pricing from "./pricing";
 import Dashboard from "./dashboard";
 import HomeVisuals from "./home-visuals";
+import ReportWorkspace from "./report-workspace";
 import EcoGrowth, { EcoReward, eligibleGrowthWork } from "./eco-growth";
 import WorkHistory from "./history";
 import Icon from "./ui-icon";
@@ -1096,24 +1097,7 @@ export default function AdminConsole() {
               </p>
             ) : (
               <>
-                {view === 8 && (
-                  <section className="panel report-workspace" aria-label="제보 관리 대시보드">
-                    <div className="section-heading">
-                      <div>
-                        <h2>공주시 제보 지도 및 검증</h2>
-                        <p>제보 관리자 계정으로 로그인하세요.</p>
-                      </div>
-                      <a href="https://eco-snow-report-platform.vercel.app/admin" target="_blank" rel="noopener noreferrer">
-                        새 창에서 제보 관리 열기 ↗
-                      </a>
-                    </div>
-                    <iframe
-                      src="https://eco-snow-report-platform.vercel.app/admin"
-                      title="제보 지도·분석·검증 대시보드"
-                      referrerPolicy="strict-origin-when-cross-origin"
-                    />
-                  </section>
-                )}
+                {view === 8 && <ReportWorkspace />}
                 {view === 7 && (
                   <div
                     className="settings-nav"

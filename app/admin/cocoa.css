@@ -55,3 +55,16 @@
 .admin-console .usage-chart circle[fill="#087f73"] { fill: var(--brand); }
 .admin-console th { background: var(--soft); color: var(--muted); }
 .admin-console .report-workspace iframe { border-color: var(--line); }
+.admin-console .report-workspace iframe.report-workspace-pending {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  min-height: 0;
+  visibility: hidden;
+}
+.report-workspace-status {
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--soft);
+}
