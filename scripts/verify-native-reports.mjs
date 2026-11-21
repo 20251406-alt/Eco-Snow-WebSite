@@ -51,6 +51,7 @@ try {
   const nav = staff.getByRole("navigation", { name: "관리자 메뉴" });
   assert.equal(await nav.getByRole("button").count(), 6);
   assert.equal(await staff.locator("iframe").count(), 0);
+  await staff.getByRole("button", { name: "공유 제보 로그인" }).click();
   await staff.getByRole("heading", { name: "기관 관리자 로그인" }).waitFor();
   await staff.getByLabel("이메일", { exact: true }).fill("local@ecosnow.test");
   await staff

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import ReportMap from "./report-map";
+import { LOCAL_REPORT_DEMO_KEY, SHARED_REPORT_MODE_KEY, sampleReports } from "./local-report-demo";
 import mapRegions from "./report-regions.json";
 
 const outlineRegions = mapRegions.map((r) => ({
@@ -62,7 +63,10 @@ export default function ReportWorkspace({
   onMap: () => void;
   onWork: (summary: string) => void;
 }) {
-  const [data, setData] = useState<Snapshot | null>(null);
+  const [shared, setShared] = useState<Snapshot | null>(null);
+  const [demoData, setDemoData] = useState<Pick<Snapshot, "regions" | "reports"> | null>(null);
+  const [useShared, setUseShared] = useState(false);
+  const data = useShared ? shared : demoData;
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [selected, setSelected] = useState("");
@@ -83,16 +87,39 @@ export default function ReportWorkspace({
         throw Object.assign(new Error("기관 관리자 권한이 필요합니다."), {
           status: 403,
         });
-      setData(snapshot);
+      setShared(snapshot);
       setNow(Date.now());
       setMessage("");
     } catch (error) {
       if ([401, 403].includes((error as { status?: number }).status ?? 0))
-        setData(null);
+        setShared(null);
       setMessage((error as Error).message);
     }
   }, []);
   useEffect(() => {
+    const first = window.setTimeout(() => {
+      const time = Date.now();
+      const seed = sampleReports(outlineRegions, time);
+      let reports = seed.reports;
+      try {
+        const saved = JSON.parse(localStorage.getItem(LOCAL_REPORT_DEMO_KEY) || "null");
+        if (Array.isArray(saved) && saved.every(r => typeof r?.id === "string" && r.id.startsWith("sample-") && Array.isArray(r.reviews))) {
+          const byId = new Map<string, Report>(saved.map(r => [r.id, r]));
+          reports = reports.map(r => {
+            const previous = byId.get(r.id);
+            return previous ? { ...r, status: previous.status, note: previous.note, reviews: previous.reviews } : r;
+          });
+        }
+        setUseShared(sessionStorage.getItem(SHARED_REPORT_MODE_KEY) === "1");
+      } catch {}
+      setNow(time);
+      setDemoData({ ...seed, reports });
+    }, 0);
+    return () => clearTimeout(first);
+  }, []);
+
+  useEffect(() => {
+    if (!useShared) return;
     const poll = () => {
       if (document.visibilityState === "visible") void refresh();
     };
@@ -107,7 +134,7 @@ export default function ReportWorkspace({
       clearInterval(timer);
       clearInterval(renew);
     };
-  }, [refresh]);
+  }, [refresh, useShared]);
 
   const all =
     data?.reports.filter((r) => r.simulation === (mode === "demo")) ?? [];
@@ -137,6 +164,24 @@ export default function ReportWorkspace({
     setNote(r.note);
     setWeather("");
   };
+  function changeMode(next: boolean) {
+    try { sessionStorage.setItem(SHARED_REPORT_MODE_KEY, next ? "1" : "0"); } catch {}
+    setSelected("");
+    setMessage("");
+    setMode("demo");
+    setUseShared(next);
+  }
+  function saveDemoReview(report: Report, status: string) {
+    if (!demoData) return;
+    const saved = demoData.reports.map(r => r.id === report.id ? {
+      ...r, status, note: note.trim(),
+      reviews: [{ id: crypto.randomUUID(), from_status: r.status, to_status: status, note: note.trim(), created_at: new Date().toISOString() }, ...r.reviews],
+    } : r);
+    localStorage.setItem(LOCAL_REPORT_DEMO_KEY, JSON.stringify(saved));
+    setDemoData({ ...demoData, reports: saved });
+    setMessage("시연 판정을 이 브라우저에 저장했습니다.");
+  }
+
   const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
@@ -188,7 +233,11 @@ export default function ReportWorkspace({
           <span className="section-kicker">공주시 · 도로 제보</span>
           <h2>{home ? "눈길 현황" : "제보 지도"}</h2>
         </div>
-        {data && (
+        {!useShared ? (
+          <button onClick={() => changeMode(true)}>공유 제보 로그인</button>
+        ) : !data ? (
+          <button onClick={() => changeMode(false)}>로그인 없이 시연</button>
+        ) : (
           <div className="actions">
             <select
               aria-label="제보 데이터 구분"
@@ -202,7 +251,8 @@ export default function ReportWorkspace({
               onClick={() =>
                 void run(async () => {
                   await api("auth/logout", {});
-                  setData(null);
+                  setShared(null);
+                  changeMode(false);
                 })
               }
             >
@@ -211,12 +261,13 @@ export default function ReportWorkspace({
           </div>
         )}
       </div>
+      {!useShared && <p className="native-report-status">로그인 없는 시연 · 가상 제보와 판정은 이 브라우저에서만 사용</p>}
       {message && (
         <p className="native-report-status" role="status">
           {message}
         </p>
       )}
-      {!data ? (
+      {!data && !useShared ? <p role="status">시연 지도를 준비 중입니다.</p> : !data ? (
         <div className="native-map-layout">
           <ReportMap regions={outlineRegions} reports={[]} />
           <form
@@ -400,6 +451,10 @@ export default function ReportWorkspace({
                     <button
                       onClick={() =>
                         void run(async () => {
+                          if (!useShared) {
+                            setWeather("시연 제보에는 실제 기상 관측을 연결하지 않습니다.");
+                            return;
+                          }
                           const result = await api<{
                             available: boolean;
                             source?: string;
@@ -482,6 +537,10 @@ export default function ReportWorkspace({
                           )
                             return;
                           void run(async () => {
+                            if (!useShared) {
+                              saveDemoReview(current, status);
+                              return;
+                            }
                             await api("action", {
                               action: "review",
                               id: current.id,
