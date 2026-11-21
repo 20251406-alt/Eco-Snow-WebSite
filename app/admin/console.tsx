@@ -54,6 +54,7 @@ import Pricing from "./pricing";
 import Dashboard from "./dashboard";
 import { homeMetrics } from "./home-metrics";
 import ReportWorkspace from "./report-workspace";
+import PosterCertification from "./poster-certification";
 import SeasonComparison from "./season-comparison";
 import EcoGrowth, { EcoReward, eligibleGrowthWork } from "./eco-growth";
 import WorkHistory from "./history";
@@ -700,6 +701,12 @@ export default function AdminConsole() {
     orgId === DEMO_ORG_ID ? demoComparisonData(data) : data;
   const report = compare(reportData, orgId);
   const metrics = homeMetrics(data, orgId, orgId === DEMO_ORG_ID);
+  const costDifference = report.priorCost === null || report.current.cost === null
+    ? null : report.priorCost - report.current.cost;
+  const latestZoneEstimates = [...new Map(
+    works.slice().sort((a, b) => a.updatedAt.localeCompare(b.updatedAt)).map(w => [w.zone.id, w]),
+  ).values()].flatMap(w => w.calculation?.kg == null ? [] : [{ id: w.zone.id, name: w.zone.name, kg: w.calculation.kg }])
+    .sort((a, b) => b.kg - a.kg).slice(0, 5);
   const monthlyMax = Math.max(1, ...metrics.months.map(m => m.actual ?? 0));
   const activeGroup = primaryGroups.find(group => group.views.includes(view));
   const completedSteps = work
@@ -893,7 +900,7 @@ export default function AdminConsole() {
   return (
     <ValidationContext.Provider value={message}>
       <SettingsContext.Provider value={view === 7 ? settingGroup : null}>
-        <div className="app-shell admin-console" data-skin="d">
+        <div className="app-shell admin-console poster-console" data-skin="d">
           <a className="skip-link" href="#content">
             본문으로 건너뛰기
           </a>
@@ -963,9 +970,12 @@ export default function AdminConsole() {
                   <Icon index={3} /> 메뉴
                 </button>
                 <div className="portal-kicker">ECO-SNOW · 기관용</div>
-                <h1>{activeGroup?.label ?? menus[view]}</h1>
+                <h1>{view === 0 ? "제설 상황 지도" : activeGroup?.label ?? menus[view]}</h1>
+                {view === 0 && <p className="poster-heading-note">시민 제보와 현장 제설 현황</p>}
               </div>
               <div className="header-controls">
+                {view === 0 && <PosterCertification works={works} orgId={orgId} demo={orgId === DEMO_ORG_ID}
+                  costDifference={costDifference} onOpen={() => setView(5)} />}
                 <button className="plan-pill" onClick={() => setView(6)}>
                   {getPlan(data.subscriptions?.[orgId]?.planId)?.name ||
                     "플랜 미선택"}{" "}
@@ -1116,7 +1126,7 @@ export default function AdminConsole() {
                   </nav>
                 )}
                 {(view === 0 || view === 8) && <ReportWorkspace
-                  home={view === 0} season={fmt(metrics.actual, " kg")} savings={fmt(report.savings === null ? null : Math.round(report.savings * 10) / 10, " %")}
+                  home={view === 0} estimates={latestZoneEstimates} demoEstimates={orgId === DEMO_ORG_ID} season={fmt(metrics.actual, " kg")} savings={fmt(report.savings === null ? null : Math.round(report.savings * 10) / 10, " %")}
                   onMap={() => setView(8)} onWork={(summary) => { setReportReference(summary); setView(2); }}
                 />}
                 {view === 0 && (

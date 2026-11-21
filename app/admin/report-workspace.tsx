@@ -47,12 +47,16 @@ const day = (value: string | number) =>
 
 export default function ReportWorkspace({
   home,
+  estimates,
+  demoEstimates,
   season,
   savings,
   onMap,
   onWork,
 }: {
   home: boolean;
+  estimates: {id: string; name: string; kg: number}[];
+  demoEstimates: boolean;
   season: string;
   savings: string;
   onMap: () => void;
@@ -173,6 +177,12 @@ export default function ReportWorkspace({
           ))}
         </div>
       )}
+      {home && <ol className="poster-flow" aria-label="제설 검토 순서">
+        <li><span>01</span> 기상 관측 참고</li>
+        <li><span>02</span> 운전자 제보</li>
+        <li><span>03</span> 현장 검증</li>
+        <li><span>04</span> 살포량 산정</li>
+      </ol>}
       <div className="native-report-head">
         <div>
           <span className="section-kicker">공주시 · 도로 제보</span>
@@ -505,6 +515,16 @@ export default function ReportWorkspace({
                 </>
               ) : (
                 <>
+                  {home && <div className="poster-estimates">
+                    <h3>구역별 현장 산정량</h3>
+                    <small>{demoEstimates ? "시연 기준 · " : ""}구역별 최신 저장 산정값</small>
+                    {estimates.length ? <ul>{estimates.map(item => (
+                      <li key={item.id}>
+                        <span>{item.name}</span><strong>{item.kg.toLocaleString("ko-KR", {maximumFractionDigits: 2})} kg</strong>
+                        <i style={{width: (item.kg / Math.max(1, estimates[0].kg) * 100) + "%"}} />
+                      </li>
+                    ))}</ul> : <p>저장된 산정값이 없습니다.</p>}
+                  </div>}
                   <h3>{home ? "최근 제보" : "제보 목록"}</h3>
                   {home && hotspot && (
                     <p>
@@ -517,7 +537,7 @@ export default function ReportWorkspace({
                     <p>현재 조건에 해당하는 제보가 없습니다.</p>
                   )}
                   <ul className="native-report-list">
-                    {reports.slice(0, home ? 5 : 15).map((r) => (
+                    {reports.slice(0, home ? 3 : 15).map((r) => (
                       <li key={r.id}>
                         <button
                           onClick={() => {

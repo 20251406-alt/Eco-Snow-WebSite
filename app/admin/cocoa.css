@@ -97,3 +97,46 @@
 .portal-season-result strong { color:#315943; font-size:clamp(25px,4vw,52px); line-height:1.2; }
 .portal-season .portal-usage strong { text-align:right; }
 @media(max-width:767px) { .portal-season { grid-template-columns:1fr; } }
+
+/* Poster layout: compact process strip and a large map with an operational side panel. */
+.poster-console { --paper:#edf3e9; --line:#d8e3d5; --ink:#22362a; --muted:#4d6354; --card:#fff; --soft:#f3f7ef; }
+.poster-console.admin-console .sidebar { background:#fbfdf9; }
+.poster-console.admin-console .brand { border-bottom-color:var(--line); }
+.poster-console.admin-console nav button.active { background:#e2efdb; }
+.poster-console.admin-console .topbar { align-items:center; }
+.poster-heading-note { margin:5px 0 0; color:var(--muted); font-size:.9rem; }
+.poster-console .header-controls { align-items:center; }
+.poster-console.admin-console button.poster-certification { display:flex; align-items:center; gap:10px; text-align:left; padding:8px 12px; border-radius:12px; border:1px solid #c8ddbf; background:#f6faf3; color:#1f442e; }
+.poster-mascot { flex:0 0 54px; height:58px; background:url('/eco-growth/forest.webp') 65% 66% / 260px auto no-repeat; border-radius:8px; }
+.poster-certification-content { display:grid; gap:3px; }
+.poster-certification-content small { font-size:.72rem; }
+.poster-certification-content strong { font-size:1rem; }
+.poster-levels { display:flex; gap:3px; }
+.poster-levels i { width:18px; height:4px; border-radius:6px; background:#dae6d3; }
+.poster-levels i[data-complete="true"] { background:#437553; }
+.poster-cost { font-size:.76rem; }
+.poster-cost b { font-size:.91rem; margin-left:5px; }
+.poster-console .native-kpis { gap:10px; margin-bottom:12px; }
+.poster-console .native-kpis article { border-radius:10px; padding:13px 15px; }
+.poster-console .native-kpis article:first-child { background:#fff; border-color:var(--line); }
+.poster-console .native-kpis article:nth-child(1) strong { color:#245a91; }
+.poster-console .native-kpis article:nth-child(2) strong { color:#985040; }
+.poster-console .native-kpis article:nth-child(4) strong { color:#305c40; }
+.poster-flow { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); list-style:none; padding:0; gap:8px; margin:0 0 14px; }
+.poster-flow li { display:flex; align-items:center; gap:7px; padding:8px 10px; background:#fff; border:1px solid var(--line); border-radius:8px; font-size:13px; }
+.poster-flow li:last-child { background:#e2efdb; font-weight:700; }
+.poster-flow span { font-size:10px; color:#315f45; font-weight:750; }
+.poster-console .native-map-layout { grid-template-columns:minmax(0,2.7fr) minmax(230px,1fr); }
+.poster-console .native-map-layout > .report-map { border-radius:10px; }
+.poster-console .native-report-card { border-radius:10px; }
+.poster-estimates { margin-bottom:12px; padding-bottom:12px; border-bottom:1px solid var(--line); }
+.poster-estimates h3 { margin-bottom:3px; }
+.poster-estimates ul { display:grid; gap:9px; margin:10px 0 0; padding:0; list-style:none; }
+.poster-estimates li { display:grid; grid-template-columns:minmax(0,1fr) auto; gap:3px 7px; font-size:12px; }
+.poster-estimates i { grid-column:1/-1; background:#3979c9; height:4px; border-radius:6px; }
+@media (max-width:1050px) { .poster-console .native-map-layout { grid-template-columns:1fr; } }
+@media (max-width:767px) { .poster-flow { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+.poster-console.admin-console .header-controls .poster-certification { order:2; }
+@media (max-width:767px) {
+  .poster-console.admin-console .header-controls .poster-certification { align-self:stretch; }
+}

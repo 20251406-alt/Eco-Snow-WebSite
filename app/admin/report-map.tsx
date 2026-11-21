@@ -96,12 +96,12 @@ export default function ReportMap({
             <path
               d="M 28 0 L 0 0 0 28"
               fill="none"
-              stroke="#ddded1"
+              stroke="#c9d6ca"
               strokeWidth=".5"
             />
           </pattern>
         </defs>
-        <rect width="900" height="650" fill="#f1f0e5" />
+        <rect width="900" height="650" fill="#f1f5ed" />
         <rect width="900" height="650" fill="url(#map-grid)" />
         <g
           transform={`translate(${450 + pan[0]} ${325 + pan[1]}) scale(${zoom}) translate(-450 -325)`}
@@ -120,8 +120,8 @@ export default function ReportMap({
                     .join(" ")}
                   fill={
                     density && n
-                      ? `rgba(94,158,121,${Math.min(0.7, 0.12 + n * 0.05)})`
-                      : "#e5eddd"
+                      ? n >= 8 ? "#f09a8b" : n >= 4 ? "#f6d477" : "#c6dcef"
+                      : "#e6eee2"
                   }
                   stroke="#fffdfb"
                   strokeWidth="2"
@@ -213,7 +213,7 @@ export default function ReportMap({
           <i style={{ background: "#7faedb" }} />
           결빙 제보
         </span>
-        <small>첨부 샘플의 경계 데이터 · 도로 안내용 아님</small>
+        <small>구역 색상은 제보 수 기준 · <b>1–3건</b> 하늘색 · <b>4–7건</b> 노랑 · <b>8건+</b> 코랄</small>
       </div>
     </div>
   );
